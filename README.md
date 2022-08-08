@@ -91,7 +91,50 @@ This is a running list of the types of content I explicitly want to support.
   - It needs to be possible to _at least_ have context-based omission of
     some content.
   - Right now I use Git submodules so I can actually omit the contents of
-    certain categories entirely (just not clone the thing).
+    certain Ks entirely (just not clone the thing).
   - For me to be able to use this for work, it needs to allow for a submodule
-    for the work category (because otherwise that'd get pretty dicey with NDA
-    stuff)
+    for the work K (because otherwise that'd get pretty dicey with NDA stuff)
+
+To meet the requirements above I figure each K needs to be usable in isolation
+and for contexts I need to have the ability to select which Ks to have present.
+
+__This means they must be separate repositories__
+
+I have run into a lot of issues trying to have an overall metarepo to manage the
+different Ks (using submodules).
+There really is no reason to have something like that, so I figure I just have
+separate repositories _wherever_ and manage them insidie `z`.
+The view `z` would roughly present would be
+
+    root
+    + K1
+    + K2
+    + ...
+
+In reality however they might be spread around like
+
+    HOME
+    + some_notes
+    | + K2
+    | + K3
+    + website
+      + content
+        + notes
+          + K1
+
+### Configuration
+
+So I figure I will need to define a per-machine config which does the following
+
+- enumerates the Ks which I want on the machine ('public', 'work' vs
+  'public','private','uni-project').
+- map each K to a location in the filesystem
+
+Eventually some additional tooling config _might_ make sense, but not right
+now.
+
+To cover that, I think all I would need is:
+
+    export ZCFG="public:$HOME/website/content/public;misc:$HOME/misc"
+
+Strikes me as good enough... 🤷
