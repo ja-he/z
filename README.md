@@ -50,7 +50,7 @@ assigned.
 - [ ] `search` invokes FZF for file/text/... search
 - [ ] `edit` open the (if necessary newly-created) note for editing
 - [ ] `sync` updates with Git
-- [ ] `init` set up (e.g. on a new machine)
+- [x] `init` set up (e.g. on a new machine)
 
 ### Types of content
 
@@ -133,8 +133,13 @@ So I figure I will need to define a per-machine config which does the following
 Eventually some additional tooling config _might_ make sense, but not right
 now.
 
-To cover that, I think all I would need is:
+Since I don't really have to worry about configuration ease for others, I think
+I'm very happy to mandate a YAML configuration, which (for one) enumerates the
+Ks like
 
-    export ZCFG="public:$HOME/website/content/public;misc:$HOME/misc"
-
-Strikes me as good enough... 🤷
+    - name: public
+      url: "git@github.com:user/public.git"
+      path: "${HOME}/path/to/pub"
+    - name: private
+      url: "git@gitea.company.com:user/private.git"
+      path: "${HOME}/path/to/priv"
