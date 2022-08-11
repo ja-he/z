@@ -20,6 +20,8 @@ func main() {
 		os.Getenv("HOME"),
 		".config/z.yml",
 	))
+  // expand env vars in config data
+  configData = []byte(os.ExpandEnv(string(configData)))
 	if readErr != nil {
 		log.Warn().Err(readErr).Msg("could not read config file, assuming no config")
 	} else {
