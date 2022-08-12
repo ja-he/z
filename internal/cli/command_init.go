@@ -16,7 +16,7 @@ func (_ *InitCommand) Execute(_ []string) error {
 	config := cfg.GlobalCfg
 	log.Debug().Interface("config", config).Msg("using global config")
 
-	for _, k := range config.Ks {
+	for id, k := range config.Ks {
 		clone := exec.Command("git", "clone", k.URL, k.Path)
 		clone.Stdout, clone.Stderr, clone.Stdin = os.Stdout, os.Stderr, os.Stdin
 		err := clone.Run()
@@ -24,7 +24,7 @@ func (_ *InitCommand) Execute(_ []string) error {
 			log.Error().
 				Err(err).
 				Strs("args", clone.Args).
-				Str("K", k.Name).
+				Str("K", id).
 				Msg("error executing clone command")
 		}
 	}
