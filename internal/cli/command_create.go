@@ -68,6 +68,8 @@ func (_ *CreateCommand) Execute(args []string) error {
 	}
 	openStr = oBuf.String()
 
+	createZDirIfNecessary := func() error { return nil }
+
 	filesWithContent := map[string]string{}
 	for filepathTemplate, contentTemplate := range blueprint.Templates {
 		f, err := template.New("filepath").Parse(filepathTemplate)
@@ -126,7 +128,20 @@ func (_ *CreateCommand) Execute(args []string) error {
 			// doesn't hurt to explicitly put this here, but as we checked for len == 1 this ought to do nothing
 			break
 		} else {
-			// TODO: add .z info to dir, if dir
+			createZDirIfNecessary = func() error {
+				zDir := path.Join(k.Path, path.Dir(file), ".z")
+				if err := os.MkdirAll(zDir, 0755); err != nil {
+					return err
+				}
+
+				if err := os.WriteFile(path.Join(zDir, "open.bash"), []byte(openStr), 0644); err != nil {
+					return err
+				}
+
+				// TODO: hooks, probably?
+
+				return nil
+			}
 		}
 	}
 	for fileRelative, content := range filesWithContent {
@@ -141,8 +156,11 @@ func (_ *CreateCommand) Execute(args []string) error {
 			log.Info().Str("file", file).Msg("successfully populated file")
 		}
 	}
+	if err := createZDirIfNecessary(); err != nil {
+		return fmt.Errorf("unable to create z dir (%s)", err.Error())
+	}
 
-	open := exec.Command("bash", "-c", openStr)
+	open := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", k.Path, openStr))
 	open.Stdout, open.Stderr, open.Stdin = os.Stdout, os.Stderr, os.Stdin
 	runErr := open.Run()
 	if runErr != nil {
