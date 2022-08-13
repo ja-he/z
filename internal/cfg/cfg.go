@@ -14,8 +14,10 @@ type K struct {
 }
 
 type Blueprint struct {
+	Subdir    string            `yaml:"subdir"`
 	Templates map[string]string `yaml:"templates"`
 	Open      string            `yaml:"open"`
+	Post      []string          `yaml:"post"`
 }
 
 type TemplateFiller struct {

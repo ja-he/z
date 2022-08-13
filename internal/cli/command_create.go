@@ -68,7 +68,24 @@ func (_ *CreateCommand) Execute(args []string) error {
 	}
 	openStr = oBuf.String()
 
-	createZDirIfNecessary := func() error { return nil }
+	hasSubdir := blueprint.Subdir != ""
+	if !hasSubdir && len(blueprint.Templates) != 1 {
+		return fmt.Errorf("blueprint '%s' is NOT in a subdir but also does NOT specify exactly one template", blueprintID)
+	}
+	subdir, subdirTmplErr := func() (string, error) {
+		tmpl, err := template.New("subdir").Parse(blueprint.Subdir)
+		if err != nil {
+			return "", fmt.Errorf("unable to parse subdir template")
+		}
+		buf := bytes.Buffer{}
+		if err := tmpl.Execute(&buf, dd); err != nil {
+			return "", fmt.Errorf("could not execute filename template (%s)", err.Error())
+		}
+		return buf.String(), nil
+	}()
+	if subdirTmplErr != nil {
+		return subdirTmplErr
+	}
 
 	filesWithContent := map[string]string{}
 	for filepathTemplate, contentTemplate := range blueprint.Templates {
@@ -99,22 +116,17 @@ func (_ *CreateCommand) Execute(args []string) error {
 	// sanity-check files before making contents
 	for file := range filesWithContent {
 		if path.IsAbs(file) {
-			log.Fatal().Str("file", file).Str("tip", "use relative paths instead").
-				Msg("this resolved path appears absolute")
+			return fmt.Errorf(
+				"This resolved path (%s) appears absolute."+
+					"Use paths relative to subdir instead (or to K, if desired and only single file).",
+				file,
+			)
 		}
-		fullFilePath := path.Join(k.Path, file)
+		fullFilePath := path.Join(k.Path, subdir, file) // if subdir is empty, its fine (just ignored)
 		if _, statErr := os.Stat(fullFilePath); !errors.Is(statErr, fs.ErrNotExist) {
 			return fmt.Errorf("the file '%s' seems to already exist", file)
 		}
-		if path.Dir(file) == "." {
-			if len(filesWithContent) > 1 {
-				log.Fatal().
-					Str("file", file).
-					Str("blueprint", blueprintID).
-					Str("tip", "use a subdir or only create one file").
-					Msg("multiple files would be created by the blueprint even though " +
-						"the path does not use a subdir")
-			}
+		if !hasSubdir {
 			_, onlyFile := path.Split(file)
 			ext := path.Ext(onlyFile)
 			if ext == "" {
@@ -127,25 +139,10 @@ func (_ *CreateCommand) Execute(args []string) error {
 			}
 			// doesn't hurt to explicitly put this here, but as we checked for len == 1 this ought to do nothing
 			break
-		} else {
-			createZDirIfNecessary = func() error {
-				zDir := path.Join(k.Path, path.Dir(file), ".z")
-				if err := os.MkdirAll(zDir, 0755); err != nil {
-					return err
-				}
-
-				if err := os.WriteFile(path.Join(zDir, "open.bash"), []byte(openStr), 0644); err != nil {
-					return err
-				}
-
-				// TODO: hooks, probably?
-
-				return nil
-			}
 		}
 	}
 	for fileRelative, content := range filesWithContent {
-		file := path.Join(k.Path, fileRelative)
+		file := path.Join(k.Path, subdir, fileRelative)
 		dir := path.Dir(file)
 		log.Debug().Str("dir", dir).Msg("creating dir with parents, if needed")
 		_ = os.MkdirAll(dir, 0755)
@@ -156,18 +153,74 @@ func (_ *CreateCommand) Execute(args []string) error {
 			log.Info().Str("file", file).Msg("successfully populated file")
 		}
 	}
-	if err := createZDirIfNecessary(); err != nil {
-		return fmt.Errorf("unable to create z dir (%s)", err.Error())
+
+	// create .z dir in subdir, if there is a subdir
+	if hasSubdir {
+		err := func() error {
+			zDir := path.Join(k.Path, subdir, ".z")
+			if err := os.MkdirAll(zDir, 0755); err != nil {
+				return err
+			}
+
+			if err := os.WriteFile(path.Join(zDir, "open.bash"), []byte(openStr), 0644); err != nil {
+				return err
+			}
+
+			postScript := "#!/bin/bash\n\n"
+			for _, postCmd := range blueprint.Post {
+				postScript = postScript + postCmd
+			}
+			if err := os.WriteFile(path.Join(zDir, "post.bash"), []byte(postScript), 0755); err != nil {
+				return err
+			}
+
+			return nil
+		}()
+
+		if err != nil {
+			return fmt.Errorf("unable to create z dir (%s)", err.Error())
+		}
 	}
 
-	open := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", k.Path, openStr))
+	open := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", path.Join(k.Path, subdir), openStr))
 	open.Stdout, open.Stderr, open.Stdin = os.Stdout, os.Stderr, os.Stdin
 	runErr := open.Run()
 	if runErr != nil {
 		return fmt.Errorf("error running open command (%s)", runErr)
 	}
 
-	// TODO: if post-hooks are to be implemented, that would go here.
+	for i := 0; i < len(blueprint.Post); i++ {
+		cmd := exec.Command(
+			"bash",
+			"-c",
+			"cd "+path.Join(k.Path, subdir)+" ; "+blueprint.Post[i],
+		)
+		cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+		if err := cmd.Run(); err != nil || cmd.ProcessState.ExitCode() != 0 {
+			fmt.Printf("there was an error trying to run post hook %d:\n", i)
+			if err != nil {
+				fmt.Printf("  > %s\n", err.Error())
+			} else {
+				fmt.Printf("  > exit code: %d\n", cmd.ProcessState.ExitCode())
+			}
+			fmt.Println("would you like to [r]e-run the hook, [c]ontinue with other hooks, or [a]bort all hooks?")
+			fmt.Print("r/C/a > ")
+			var input string
+			_, _ = fmt.Scanln(&input)
+			switch input {
+			case "r":
+				i--
+				continue
+			case "c", "":
+				continue
+			case "a":
+				break
+			default:
+				log.Error().Str("directive", input).Msg("unknown directive, continuing...")
+				continue
+			}
+		}
+	}
 
 	return nil
 }
