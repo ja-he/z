@@ -69,8 +69,13 @@ func (_ *CreateCommand) Execute(args []string) error {
 	openStr = oBuf.String()
 
 	hasSubdir := blueprint.Subdir != ""
-	if !hasSubdir && len(blueprint.Templates) != 1 {
-		return fmt.Errorf("blueprint '%s' is NOT in a subdir but also does NOT specify exactly one template", blueprintID)
+	if !hasSubdir {
+		if len(blueprint.Templates) != 1 {
+			return fmt.Errorf("blueprint '%s' is NOT in a subdir but also does NOT specify exactly one template", blueprintID)
+		}
+		if len(blueprint.Post) > 0 {
+			return fmt.Errorf("blueprint '%s' is NOT in a subdir but still has post hooks", blueprintID)
+		}
 	}
 	subdir, subdirTmplErr := func() (string, error) {
 		tmpl, err := template.New("subdir").Parse(blueprint.Subdir)
