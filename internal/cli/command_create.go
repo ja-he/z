@@ -53,6 +53,7 @@ func (_ *CreateCommand) Execute(args []string) error {
 		K:     k,
 		Name:  name,
 		Today: strings.Split(time.Now().Local().Format(time.RFC3339), "T")[0],
+		Now:   time.Now().Local().Format(time.RFC3339),
 	}
 
 	openTmpl, err := template.New("openStr").Parse(blueprint.Open)

@@ -24,4 +24,5 @@ type TemplateFiller struct {
 	K     K
 	Name  string
 	Today string
+	Now   string
 }
