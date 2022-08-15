@@ -7,6 +7,8 @@ import (
 	"path"
 	"strings"
 	"z/internal/cfg"
+
+	"gopkg.in/yaml.v3"
 )
 
 type OpenCommand struct{}
@@ -33,7 +35,28 @@ func (c *OpenCommand) Execute(args []string) error {
 
 	switch ft {
 	case "Z":
-		return fmt.Errorf("TODO: open Z-dir")
+		zPath := path.Join(fullPath, ".z", "z.yml")
+		zYAML, err := os.ReadFile(zPath)
+		if err != nil {
+			return fmt.Errorf("could not open '%s' (%s)", zPath, err.Error())
+		}
+		z := cfg.Z{}
+		if err := yaml.Unmarshal(zYAML, &z); err != nil {
+			return fmt.Errorf("could not read yaml in '%s' (%s)", zPath, err.Error())
+		}
+		openCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", fullPath, z.Open))
+		openCmd.Stdout, openCmd.Stderr, openCmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+		if err := openCmd.Run(); err != nil {
+			return fmt.Errorf("could not run open command from '%s' (%s)", zPath, err.Error())
+		}
+		for i, post := range z.Post {
+			postCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", fullPath, post))
+			postCmd.Stdout, postCmd.Stderr, postCmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+			if err := postCmd.Run(); err != nil {
+				return fmt.Errorf("unable to run post command %d from '%s' (%s)", i, zPath, err.Error())
+			}
+		}
+		return nil
 
 	case "D":
 		return fmt.Errorf("TODO: open regular dir")

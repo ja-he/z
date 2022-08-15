@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 
 	"z/internal/cfg"
 )
@@ -168,16 +169,18 @@ func (_ *CreateCommand) Execute(args []string) error {
 				return err
 			}
 
-			if err := os.WriteFile(path.Join(zDir, "open.bash"), []byte(openStr), 0644); err != nil {
-				return err
+			// TODO: post template fill
+			zYAML, marshalErr := yaml.Marshal(cfg.Z{
+				Open:    openStr,
+				Post:    blueprint.Post,
+				Sources: []string{},
+				Objects: []string{},
+			})
+			if marshalErr != nil {
+				return fmt.Errorf("unable to marshal z yaml (%s)", marshalErr.Error())
 			}
-
-			postScript := "#!/bin/bash\n\n"
-			for _, postCmd := range blueprint.Post {
-				postScript = postScript + postCmd
-			}
-			if err := os.WriteFile(path.Join(zDir, "post.bash"), []byte(postScript), 0755); err != nil {
-				return err
+			if err := os.WriteFile(path.Join(zDir, "z.yml"), zYAML, 0644); err != nil {
+				return fmt.Errorf("error writing '.z/z.yml' (%s)", err.Error())
 			}
 
 			return nil
