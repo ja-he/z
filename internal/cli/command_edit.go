@@ -31,9 +31,9 @@ func (c *OpenCommand) Execute(args []string) error {
 		return fmt.Errorf("file '%s' stat error (%s)", fullPath, err.Error())
 	}
 
-	ft := args[2]
+	zType := args[2]
 
-	switch ft {
+	switch zType {
 	case "Z":
 		zPath := path.Join(fullPath, ".z", "z.yml")
 		zYAML, err := os.ReadFile(zPath)
@@ -61,7 +61,7 @@ func (c *OpenCommand) Execute(args []string) error {
 	case "D":
 		return fmt.Errorf("TODO: open regular dir")
 
-	default:
+	case "F", "S", "O":
 		ext := strings.TrimLeft(path.Ext(fullPath), ".")
 		openCmd, err := func() (*exec.Cmd, error) {
 			switch ext {
@@ -92,6 +92,9 @@ func (c *OpenCommand) Execute(args []string) error {
 		if err := openCmd.Run(); err != nil {
 			return fmt.Errorf("open command error (%s)", err.Error())
 		}
+
+	default:
+		return fmt.Errorf("Unknown Z-Type '%s'", zType)
 	}
 
 	return nil

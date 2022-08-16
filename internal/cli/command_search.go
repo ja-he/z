@@ -26,7 +26,7 @@ type SearchFileCommand struct{}
 func (c *SearchFileCommand) Execute(args []string) error {
 
 	resultsMtx := sync.Mutex{}
-	fzfCmd := exec.Command("fzf") // TODO: preview
+	fzfCmd := exec.Command("fzf", "--preview", "z preview {}")
 	fzfCmd.Stderr = os.Stderr
 	resultsWriter, err := fzfCmd.StdinPipe()
 	if err != nil {
