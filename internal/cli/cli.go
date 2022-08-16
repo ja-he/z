@@ -7,6 +7,7 @@ type CommandLineOpts struct {
 	Search  SearchCommand  `command:"search"`
 	Preview PreviewCommand `command:"preview"`
 	Open    OpenCommand    `command:"open"`
+	Sync    SyncCommand    `command:"sync"`
 }
 
 var Opts CommandLineOpts
