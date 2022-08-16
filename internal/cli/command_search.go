@@ -21,6 +21,42 @@ type SearchCommand struct {
 
 type SearchTextCommand struct{}
 
+func (c *SearchTextCommand) Execute(args []string) error {
+	pathsArg := ""
+	sedConvertKToPathPipeline := ""
+	sedConvertPathToKPipeline := ""
+	for kID, k := range cfg.GlobalCfg.Ks {
+		pathsArg += fmt.Sprintf(` "%s"`, k.Path)
+		sedConvertKToPathPipeline += fmt.Sprintf(
+			`| sed "s/^%s /%s\//"`,
+			kID,
+			strings.ReplaceAll(k.Path, `/`, `\/`),
+		)
+		sedConvertPathToKPipeline += fmt.Sprintf(
+			`| sed "s/^%s\//%s /"`,
+			strings.ReplaceAll(k.Path, `/`, `\/`),
+			kID,
+		)
+	}
+
+	cmdStr :=
+		`rg --line-number --with-filename . --color=never --field-match-separator ' '` + pathsArg + " " +
+			sedConvertPathToKPipeline + " | " +
+			"fzf --ansi --preview " +
+			fmt.Sprintf(
+				`'bat --color=always --decorations=never $(echo {1..2} %s) --highlight-line {3}'`,
+				sedConvertKToPathPipeline,
+			)
+	cmd := exec.Command("bash", "-c", cmdStr)
+
+	cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error running bash command (%s)", err.Error())
+	}
+
+	return nil
+}
+
 type SearchFileCommand struct{}
 
 func (c *SearchFileCommand) Execute(args []string) error {

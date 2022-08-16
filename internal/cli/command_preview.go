@@ -62,6 +62,8 @@ func (c *PreviewCommand) Execute(args []string) error {
 		switch strings.TrimPrefix(ext, ".") {
 		case "txt", "md", "tex", "bib":
 			cmd = exec.Command("bat", "--color", "always", "--decorations", "never", fullPath)
+		case "pdf":
+			cmd = exec.Command("pdftotext", fullPath, "-")
 		}
 		if cmd != nil {
 			cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
