@@ -92,6 +92,20 @@ func (c *OpenCommand) Execute(args []string) error {
 		if err := openCmd.Run(); err != nil {
 			return fmt.Errorf("open command error (%s)", err.Error())
 		}
+		if zType == "S" {
+			dir, _ := path.Split(fullPath)
+			z, err := cfg.ReadZ(dir)
+			if err != nil {
+				return fmt.Errorf("unable to read .z/z.yml to do post hooks (%s)", err.Error())
+			}
+			for i, post := range z.Post {
+				postCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", dir, post))
+				postCmd.Stdout, postCmd.Stderr, postCmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+				if err := postCmd.Run(); err != nil {
+					return fmt.Errorf("unable to run post command %d (%s)", i, err.Error())
+				}
+			}
+		}
 
 	default:
 		return fmt.Errorf("Unknown Z-Type '%s'", zType)

@@ -87,18 +87,18 @@ func (c *SearchTextCommand) Execute(args []string) error {
 				return "F"
 			}
 			fullPath := path.Join(k.Path, file)
-			dir, _ := path.Split(fullPath)
+			dir, filename := path.Split(fullPath)
 			z, err := cfg.ReadZ(dir)
 			if err != nil {
 				return "F"
 			}
 			for _, source := range z.Sources {
-				if source == file {
+				if source == filename {
 					return "S"
 				}
 			}
 			for _, object := range z.Objects {
-				if object == file {
+				if object == filename {
 					return "O"
 				}
 			}
