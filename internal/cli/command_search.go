@@ -49,12 +49,68 @@ func (c *SearchTextCommand) Execute(args []string) error {
 			)
 	cmd := exec.Command("bash", "-c", cmdStr)
 
-	cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running bash command (%s)", err.Error())
+	cmd.Stderr, cmd.Stdin = os.Stderr, os.Stdin
+	outPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("cant get stdout pipe (%s)", err.Error())
 	}
 
-	return nil
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("error starting bash command (%s)", err.Error())
+	}
+	selected, err := io.ReadAll(outPipe)
+	if err != nil {
+		return fmt.Errorf("cant read (%s)", err.Error())
+	}
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("error waiting on bash command (%s)", err.Error())
+	}
+
+	selected = bytes.TrimRight(selected, "\n")
+	selectedLinewise := bytes.Split(selected, []byte{'\n'})
+
+	switch len(selectedLinewise) {
+	case 0:
+		fmt.Println("nothing selected, exiting...")
+		return nil
+
+	case 1:
+		tokens := bytes.Split(selectedLinewise[0], []byte{' '})
+		if len(tokens) < 4 {
+			return fmt.Errorf("expected at least 4 tokens to be returned by fzf (got %d)", len(tokens))
+		}
+		kID := string(tokens[0])
+		file := string(tokens[1])
+		zt := func() string {
+			k, ok := cfg.GlobalCfg.Ks[kID]
+			if !ok {
+				return "F"
+			}
+			fullPath := path.Join(k.Path, file)
+			dir, _ := path.Split(fullPath)
+			z, err := cfg.ReadZ(dir)
+			if err != nil {
+				return "F"
+			}
+			for _, source := range z.Sources {
+				if source == file {
+					return "S"
+				}
+			}
+			for _, object := range z.Objects {
+				if object == file {
+					return "O"
+				}
+			}
+			return "F"
+		}()
+
+		return (&OpenCommand{}).Execute([]string{kID, file, zt})
+
+	default:
+		log.Warn().Msg("unable to open multiple files right now")
+		return nil
+	}
 }
 
 type SearchFileCommand struct{}
