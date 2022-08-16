@@ -73,7 +73,20 @@ func (c *SearchFileCommand) Execute(args []string) error {
 						if err := writeResult([]byte(fmt.Sprintf("%s\t%s\t%s\n", id, dir, "Z"))); err != nil {
 							log.Warn().Err(err).Msg("error writing result")
 						}
-						// TODO: read sources and objects from .z
+						z, err := cfg.ReadZ(path.Join(k.Path, dir))
+						if err != nil {
+							return fmt.Errorf("unable to get z-data from dir (%s)", err.Error())
+						}
+						for _, source := range z.Sources {
+							if err := writeResult([]byte(fmt.Sprintf("%s\t%s\t%s\n", id, path.Join(dir, source), "S"))); err != nil {
+								log.Warn().Err(err).Msg("error writing result")
+							}
+						}
+						for _, object := range z.Objects {
+							if err := writeResult([]byte(fmt.Sprintf("%s\t%s\t%s\n", id, path.Join(dir, object), "O"))); err != nil {
+								log.Warn().Err(err).Msg("error writing result")
+							}
+						}
 					} else {
 						for _, e := range dirEntries {
 							if e.Name()[0] == '.' {

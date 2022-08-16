@@ -57,6 +57,19 @@ func (_ *CreateCommand) Execute(args []string) error {
 		Now:   time.Now().Local().Format(time.RFC3339),
 	}
 
+	fillTemplate := func(t string) (string, error) {
+		tmpl, err := template.New("tmpl").Parse(t)
+		if err != nil {
+			return "", fmt.Errorf("unable to parse template '%s' (%s)", t, err.Error())
+		}
+
+		b := bytes.Buffer{}
+		if err := tmpl.Execute(&b, dd); err != nil {
+			return "", fmt.Errorf("could not execute template (%s)", err.Error())
+		}
+		return b.String(), nil
+	}
+
 	openTmpl, err := template.New("openStr").Parse(blueprint.Open)
 	if err != nil {
 		log.Fatal().Err(err).Str("template", blueprint.Open).
@@ -169,12 +182,35 @@ func (_ *CreateCommand) Execute(args []string) error {
 				return err
 			}
 
-			// TODO: post template fill
+			pFilled := make([]string, len(blueprint.Post))
+			for i := range blueprint.Post {
+				var err error
+				pFilled[i], err = fillTemplate(blueprint.Post[i])
+				if err != nil {
+					return err
+				}
+			}
+			sFilled := make([]string, len(blueprint.Sources))
+			for i := range blueprint.Sources {
+				var err error
+				sFilled[i], err = fillTemplate(blueprint.Sources[i])
+				if err != nil {
+					return err
+				}
+			}
+			oFilled := make([]string, len(blueprint.Objects))
+			for i := range blueprint.Objects {
+				var err error
+				oFilled[i], err = fillTemplate(blueprint.Objects[i])
+				if err != nil {
+					return err
+				}
+			}
 			zYAML, marshalErr := yaml.Marshal(cfg.Z{
 				Open:    openStr,
-				Post:    blueprint.Post,
-				Sources: []string{},
-				Objects: []string{},
+				Post:    pFilled,
+				Sources: sFilled,
+				Objects: oFilled,
 			})
 			if marshalErr != nil {
 				return fmt.Errorf("unable to marshal z yaml (%s)", marshalErr.Error())

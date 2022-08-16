@@ -18,6 +18,8 @@ type Blueprint struct {
 	Templates map[string]string `yaml:"templates"`
 	Open      string            `yaml:"open"`
 	Post      []string          `yaml:"post"`
+	Sources   []string          `yaml:"sources"`
+	Objects   []string          `yaml:"objects"`
 }
 
 type TemplateFiller struct {
