@@ -106,7 +106,7 @@ __This means they must be separate repositories__
 I have run into a lot of issues trying to have an overall metarepo to manage the
 different Ks (using submodules).
 There really is no reason to have something like that, so I figure I just have
-separate repositories _wherever_ and manage them insidie `z`.
+separate repositories _wherever_ and manage them inside `z`.
 The view `z` would roughly present would be
 
     root

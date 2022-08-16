@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/rs/zerolog"
@@ -35,6 +37,38 @@ func main() {
 	}
 
 	parser := flags.NewParser(&cli.Opts, flags.Default)
+	parser.CompletionHandler = func(items []flags.Completion) {
+		suggestions := []string{}
+		if len(items) > 0 {
+			for _, item := range items {
+				suggestions = append(suggestions, item.Item)
+			}
+		} else if len(os.Args) > 2 {
+
+			switch os.Args[1] {
+
+			case "create":
+				switch len(os.Args) {
+				case 3: // complete K
+					for kID := range cfg.GlobalCfg.Ks {
+						suggestions = append(suggestions, kID)
+					}
+				case 5: // complete blueprint
+					for bID := range cfg.GlobalCfg.Blueprints {
+						suggestions = append(suggestions, bID)
+					}
+				}
+
+			}
+
+		}
+		for _, suggestion := range suggestions {
+			if strings.HasPrefix(suggestion, os.Args[len(os.Args)-1]) {
+				fmt.Println(suggestion)
+			}
+		}
+		os.Exit(0)
+	}
 	parser.SubcommandsOptional = false
 
 	_, err := parser.Parse()
