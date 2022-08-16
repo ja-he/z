@@ -49,7 +49,7 @@ assigned.
 
 - [x] `search` invokes FZF for file/text/... search to open
 - [x] `create` open a newly-created note (by a blueprint) for editing
-- [ ] `sync` updates with Git
+- [x] `sync` updates with Git
 - [x] `init` set up (e.g. on a new machine)
 - [x] `edit` edit an existing note (probably invoked for FZF output, not
       intended for manual invocation)
