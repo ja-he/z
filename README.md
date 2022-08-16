@@ -47,10 +47,13 @@ This section is part wish-list and part check-list.
 This is a running list of planned and realized commands that have already been
 assigned.
 
-- [ ] `search` invokes FZF for file/text/... search
-- [ ] `edit` open the (if necessary newly-created) note for editing
+- [x] `search` invokes FZF for file/text/... search to open
+- [x] `create` open a newly-created note (by a blueprint) for editing
 - [ ] `sync` updates with Git
 - [x] `init` set up (e.g. on a new machine)
+- [x] `edit` edit an existing note (probably invoked for FZF output, not
+      intended for manual invocation)
+- [x] `preview` to preview a note (for FZF to invoke)
 
 ### Types of content
 
@@ -143,3 +146,27 @@ Ks like
     - name: private
       url: "git@gitea.company.com:user/private.git"
       path: "${HOME}/path/to/priv"
+
+Next, there might be reason for per-K configuration.
+Here's the usage I have in mind:
+
+    z create <K> <name> <blueprint>
+              ^   ^      ^
+              |   |      e.g. 'md' to create a simple markdown note, 'latex' to
+              |   |      create a complex latex doc with build file or maybe
+              |   |      'journal' to always begin the filename with a date stamp.
+              |   name of the file (pre-.extension)
+              e.g. 'public'
+
+What would I want to define for a blueprint thus is basically from a file name,
+infer a document structure. It could be as simple as `K/filename.md` or it could
+be more complicated, like generate a LaTeX content skeleton in
+`K/filename/main.tex`, add a Makefile at `K/filename/Makefile`, ...
+
+It strikes me that there is an initial distinction to be made:
+
+ 1. Simple file (all the info about it that we have is in the file name
+    extension)
+ 2. File in dir; in this case we could dump whatever info we wanted into
+    `K/filename/.z` for example, including post-hooks, preferred editor info, ...
+
