@@ -41,7 +41,9 @@ func main() {
 		suggestions := []string{}
 		if len(items) > 0 {
 			for _, item := range items {
-				suggestions = append(suggestions, item.Item)
+				if len(item.Item) > 1 {
+					suggestions = append(suggestions, item.Item)
+				}
 			}
 		} else if len(os.Args) > 2 {
 

@@ -14,14 +14,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type SearchCommand struct {
-	Text SearchTextCommand `command:"text"`
-	File SearchFileCommand `command:"file"`
+type FindCommand struct {
+	T    FindTextCommand `command:"t"`
+	Text FindTextCommand `command:"text"`
+	F    FindFileCommand `command:"f"`
+	File FindFileCommand `command:"file"`
 }
 
-type SearchTextCommand struct{}
+type FindTextCommand struct{}
 
-func (c *SearchTextCommand) Execute(args []string) error {
+func (c *FindTextCommand) Execute(args []string) error {
 	pathsArg := ""
 	sedConvertKToPathPipeline := ""
 	sedConvertPathToKPipeline := ""
@@ -113,9 +115,9 @@ func (c *SearchTextCommand) Execute(args []string) error {
 	}
 }
 
-type SearchFileCommand struct{}
+type FindFileCommand struct{}
 
-func (c *SearchFileCommand) Execute(args []string) error {
+func (c *FindFileCommand) Execute(args []string) error {
 
 	resultsMtx := sync.Mutex{}
 	fzfCmd := exec.Command("fzf", "--preview", "z preview {}")

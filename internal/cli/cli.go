@@ -2,12 +2,21 @@ package cli
 
 type CommandLineOpts struct {
 	Version VersionCommand `command:"version"`
-	Init    InitCommand    `command:"init"`
-	Create  CreateCommand  `command:"create"`
-	Search  SearchCommand  `command:"search"`
+
+	Init InitCommand `command:"init"`
+
+	C      CreateCommand `command:"c"`
+	Create CreateCommand `command:"create"`
+
+	F    FindCommand `command:"f"`
+	Find FindCommand `command:"find"`
+
 	Preview PreviewCommand `command:"preview"`
-	Open    OpenCommand    `command:"open"`
-	Sync    SyncCommand    `command:"sync"`
+
+	Open OpenCommand `command:"open"`
+
+	S    SyncCommand `command:"s"`
+	Sync SyncCommand `command:"sync"`
 }
 
 var Opts CommandLineOpts
