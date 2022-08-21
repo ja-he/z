@@ -22,8 +22,6 @@ func main() {
 		os.Getenv("HOME"),
 		".config/z.yml",
 	))
-	// expand env vars in config data
-	configData = []byte(os.ExpandEnv(string(configData)))
 	if readErr != nil {
 		log.Warn().Err(readErr).Msg("could not read config file, assuming no config")
 	} else {
@@ -33,6 +31,12 @@ func main() {
 			log.Fatal().Err(err).Msg("could not parse config")
 		} else {
 			cfg.GlobalCfg = config
+			for id, k := range cfg.GlobalCfg.Ks {
+				cfg.GlobalCfg.Ks[id] = cfg.K{
+					Path: os.ExpandEnv(k.Path),
+					URL:  os.ExpandEnv(k.URL),
+				}
+			}
 		}
 	}
 
