@@ -50,7 +50,9 @@ func (c *OpenCommand) Execute(args []string) error {
 			return fmt.Errorf("could not run open command from '%s' (%s)", zPath, err.Error())
 		}
 		for i, post := range z.Post {
+			fmt.Println("running post command", i, ":")
 			postCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", fullPath, post))
+			fmt.Println(postCmd.String())
 			postCmd.Stdout, postCmd.Stderr, postCmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 			if err := postCmd.Run(); err != nil {
 				return fmt.Errorf("unable to run post command %d from '%s' (%s)", i, zPath, err.Error())
