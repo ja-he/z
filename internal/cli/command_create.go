@@ -175,6 +175,7 @@ func (_ *CreateCommand) Execute(args []string) error {
 	}
 
 	// create .z dir in subdir, if there is a subdir
+	pFilled := make([]string, len(blueprint.Post))
 	if hasSubdir {
 		err := func() error {
 			zDir := path.Join(k.Path, subdir, ".z")
@@ -182,7 +183,6 @@ func (_ *CreateCommand) Execute(args []string) error {
 				return err
 			}
 
-			pFilled := make([]string, len(blueprint.Post))
 			for i := range blueprint.Post {
 				var err error
 				pFilled[i], err = fillTemplate(blueprint.Post[i])
@@ -234,11 +234,11 @@ func (_ *CreateCommand) Execute(args []string) error {
 		return fmt.Errorf("error running open command (%s)", runErr)
 	}
 
-	for i := 0; i < len(blueprint.Post); i++ {
+	for i := 0; i < len(pFilled); i++ {
 		cmd := exec.Command(
 			"bash",
 			"-c",
-			"cd "+path.Join(k.Path, subdir)+" ; "+blueprint.Post[i],
+			"cd "+path.Join(k.Path, subdir)+" ; "+pFilled[i],
 		)
 		cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 		if err := cmd.Run(); err != nil || cmd.ProcessState.ExitCode() != 0 {
