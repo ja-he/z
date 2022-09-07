@@ -25,7 +25,10 @@ func (c *SyncCommand) Execute(args []string) error {
 				if [[ $(git status --porcelain) ]]; then
 				  local_update=true
 				fi
-				if [[ $(git fetch) ]]; then
+				git fetch
+				local_head=$(git rev-parse @)
+				remote_head=$(git rev-parse @{u})
+				if [[ "${local_head}" != "${remote_head}" ]]; then
 				  remote_update=true
 				fi
 				
