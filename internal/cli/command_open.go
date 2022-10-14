@@ -8,6 +8,7 @@ import (
 	"strings"
 	"z/internal/cfg"
 
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,15 +45,29 @@ func (c *OpenCommand) Execute(args []string) error {
 		if err := yaml.Unmarshal(zYAML, &z); err != nil {
 			return fmt.Errorf("could not read yaml in '%s' (%s)", zPath, err.Error())
 		}
+		if z.View != "" {
+			log.Info().Str("command", z.View).Msg("running view command")
+			viewCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", fullPath, z.View))
+			viewCmd.Start()
+			defer func() {
+				log.Info().Msg("terminating view command on exit")
+				viewCmd.Process.Kill()
+			}()
+		}
+		// NOTE(ja-he):
+		//  Neovim, a common open command for me, does some weird stuff on cleanup
+		//  when closed, which essentially gobbles some of the previously printed
+		//  stuff. Not all TUI applications work this way, e.g., 'dayplan', written
+		//  with Golang 'tcell' behaves as expected.
+		//  Vim seems to work the same as Neovim.
 		openCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", fullPath, z.Open))
 		openCmd.Stdout, openCmd.Stderr, openCmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 		if err := openCmd.Run(); err != nil {
 			return fmt.Errorf("could not run open command from '%s' (%s)", zPath, err.Error())
 		}
 		for i, post := range z.Post {
-			fmt.Println("running post command", i, ":")
 			postCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", fullPath, post))
-			fmt.Println(postCmd.String())
+			log.Info().Int("i", i).Str("command", postCmd.String()).Msg("running post command:")
 			postCmd.Stdout, postCmd.Stderr, postCmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 			if err := postCmd.Run(); err != nil {
 				return fmt.Errorf("unable to run post command %d from '%s' (%s)", i, zPath, err.Error())
