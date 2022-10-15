@@ -17,6 +17,7 @@ type Blueprint struct {
 	Subdir    string            `yaml:"subdir"`
 	Templates map[string]string `yaml:"templates"`
 	Open      string            `yaml:"open"`
+	View      string            `yaml:"view"`
 	Post      []string          `yaml:"post"`
 	Sources   []string          `yaml:"sources"`
 	Objects   []string          `yaml:"objects"`

@@ -83,6 +83,18 @@ func (_ *CreateCommand) Execute(args []string) error {
 	}
 	openStr = oBuf.String()
 
+	viewTmpl, err := template.New("viewStr").Parse(blueprint.View)
+	if err != nil {
+		log.Fatal().Err(err).Str("template", blueprint.View).
+			Msg("unable to parse view template")
+	}
+	var viewStr string
+	vBuf := bytes.Buffer{}
+	if err := viewTmpl.Execute(&vBuf, dd); err != nil {
+		return fmt.Errorf("could not execute open template (%s)", err.Error())
+	}
+	viewStr = vBuf.String()
+
 	hasSubdir := blueprint.Subdir != ""
 	if !hasSubdir {
 		if len(blueprint.Templates) != 1 {
@@ -208,6 +220,7 @@ func (_ *CreateCommand) Execute(args []string) error {
 			}
 			zYAML, marshalErr := yaml.Marshal(cfg.Z{
 				Open:    openStr,
+				View:    viewStr,
 				Post:    pFilled,
 				Sources: sFilled,
 				Objects: oFilled,
