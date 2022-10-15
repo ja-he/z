@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 	"text/template"
@@ -146,6 +145,10 @@ func (_ *CreateCommand) Execute(args []string) error {
 	}
 
 	// sanity-check files before making contents
+	onlyFileIfNoSubdir := func() string {
+		log.Fatal().Msg("Erroneously called onlyFileIfNoSubdir() while having a subdir?!")
+		return ""
+	}
 	for file := range filesWithContent {
 		if path.IsAbs(file) {
 			return fmt.Errorf(
@@ -160,6 +163,7 @@ func (_ *CreateCommand) Execute(args []string) error {
 		}
 		if !hasSubdir {
 			_, onlyFile := path.Split(file)
+			onlyFileIfNoSubdir = func() string { return onlyFile }
 			ext := path.Ext(onlyFile)
 			if ext == "" {
 				return fmt.Errorf("the resolved file path '%s' seems to lack an extension", file)
@@ -240,45 +244,22 @@ func (_ *CreateCommand) Execute(args []string) error {
 		}
 	}
 
-	open := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", path.Join(k.Path, subdir), openStr))
-	open.Stdout, open.Stderr, open.Stdin = os.Stdout, os.Stderr, os.Stdin
-	runErr := open.Run()
-	if runErr != nil {
-		return fmt.Errorf("error running open command (%s)", runErr)
-	}
-
-	for i := 0; i < len(pFilled); i++ {
-		cmd := exec.Command(
-			"bash",
-			"-c",
-			"cd "+path.Join(k.Path, subdir)+" ; "+pFilled[i],
-		)
-		cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
-		if err := cmd.Run(); err != nil || cmd.ProcessState.ExitCode() != 0 {
-			fmt.Printf("there was an error trying to run post hook %d:\n", i)
-			if err != nil {
-				fmt.Printf("  > %s\n", err.Error())
+	// run the open command
+	return (&OpenCommand{}).Execute([]string{
+		kID,
+		func() string {
+			if hasSubdir {
+				return subdir
 			} else {
-				fmt.Printf("  > exit code: %d\n", cmd.ProcessState.ExitCode())
+				return onlyFileIfNoSubdir()
 			}
-			fmt.Println("would you like to [r]e-run the hook, [c]ontinue with other hooks, or [a]bort all hooks?")
-			fmt.Print("r/C/a > ")
-			var input string
-			_, _ = fmt.Scanln(&input)
-			switch input {
-			case "r":
-				i--
-				continue
-			case "c", "":
-				continue
-			case "a":
-				break
-			default:
-				log.Error().Str("directive", input).Msg("unknown directive, continuing...")
-				continue
+		}(),
+		func() string {
+			if hasSubdir {
+				return "Z"
+			} else {
+				return "F"
 			}
-		}
-	}
-
-	return nil
+		}(),
+	})
 }
