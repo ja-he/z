@@ -1,12 +1,17 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
 	"z/internal/cfg"
+
+	"github.com/rs/zerolog/log"
 )
 
 type SyncCommand struct{}
@@ -15,10 +20,13 @@ func (c *SyncCommand) Execute(args []string) error {
 	errs := []string{}
 	msgs := []string{}
 	for kID, k := range cfg.GlobalCfg.Ks {
-		fmt.Println("updating", kID)
-		cmd := exec.Command(
-			"bash", "-c",
-			fmt.Sprintf(`
+
+		if hadToInitialize := ensureInitialized(kID, k); !hadToInitialize {
+
+			fmt.Println("updating", kID)
+			cmd := exec.Command(
+				"bash", "-c",
+				fmt.Sprintf(`
 				cd "%s"
 				local_update=false
 				remote_update=false
@@ -48,21 +56,24 @@ func (c *SyncCommand) Execute(args []string) error {
 						exit 1
 				  fi
 				fi`,
-				k.Path, strings.Split(time.Now().Local().Format(time.RFC3339), "T")[0], kID,
-			),
-		)
-		cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
-
-		if err := cmd.Run(); err != nil {
-			errs = append(errs, err.Error())
-			msgs = append(
-				msgs,
-				fmt.Sprintf(
-					"%s could not be synced!\nDo `cd '%s'` and resolve it there.\n",
-					kID,
-					k.Path,
+					k.Path, strings.Split(time.Now().Local().Format(time.RFC3339), "T")[0], kID,
 				),
 			)
+			cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+
+			if err := cmd.Run(); err != nil {
+				errs = append(errs, err.Error())
+				msgs = append(
+					msgs,
+					fmt.Sprintf(
+						"%s could not be synced!\nDo `cd '%s'` and resolve it there.\n",
+						kID,
+						k.Path,
+					),
+				)
+			}
+		} else {
+			log.Info().Str("K", kID).Msg("as K was just cloned, skipped pull/push for it")
 		}
 	}
 	if len(errs) != 0 {
@@ -73,4 +84,27 @@ func (c *SyncCommand) Execute(args []string) error {
 	}
 
 	return nil
+}
+
+func ensureInitialized(kID string, k cfg.K) (initialized bool) {
+	_, err := os.Stat(k.Path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			log.Info().Str("K", kID).Str("path", k.Path).Msg("K's path does not exist, initializing it by git clone")
+			clone := exec.Command("git", "clone", k.URL, k.Path)
+			clone.Stdout, clone.Stderr, clone.Stdin = os.Stdout, os.Stderr, os.Stdin
+			err := clone.Run()
+			if err != nil {
+				log.Error().
+					Err(err).
+					Strs("args", clone.Args).
+					Str("K", kID).
+					Msg("error executing clone command")
+			}
+			return true
+		} else {
+			log.Fatal().Str("path", k.Path).Msg("stat err for K path but it appears to exist?")
+		}
+	}
+	return false
 }
