@@ -11,7 +11,8 @@ type CommandLineOpts struct {
 	F    FindCommand `command:"f"`
 	Find FindCommand `command:"find"`
 
-	Preview PreviewCommand `command:"preview"`
+	Preview        PreviewCommand        `command:"preview"`
+	EnumerateFiles EnumerateFilesCommand `command:"enumerate-files"`
 
 	Open OpenCommand `command:"open"`
 
