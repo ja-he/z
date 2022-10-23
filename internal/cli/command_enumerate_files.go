@@ -5,24 +5,60 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 	"z/internal/cfg"
 
 	"github.com/rs/zerolog/log"
 )
 
 type EnumerateFilesCommand struct {
+	K        bool `long:"k" description:"show k name"`
+	FileName bool `long:"file-name" description:"show file name"`
+	FileType bool `long:"file-type" description:"show file type"`
+	FullPath bool `long:"full-path" description:"show full path"`
 }
 
 func (c *EnumerateFilesCommand) Execute(args []string) error {
-  return enumerateFiles(os.Stdout)
+	return c.enumerateFiles(os.Stdout)
 }
 
-func enumerateFiles(w io.Writer) error {
+func (c *EnumerateFilesCommand) enumerateFiles(w io.Writer) error {
 	for id, k := range cfg.GlobalCfg.Ks {
 		entries, err := os.ReadDir(k.Path)
 		if err != nil {
 			return fmt.Errorf("unable to read dir '%s' for K '%s'", k.Path, id)
 		}
+		partsSep := "\t"
+
+		addEnabled := func(k, fileName, fileType, fullPath string) []string {
+			result := []string{}
+			if c.K {
+				result = append(result, k)
+			}
+			if c.FileName {
+				result = append(result, fileName)
+			}
+			if c.FileType {
+				result = append(result, fileType)
+			}
+			if c.FullPath {
+				result = append(result, fullPath)
+			}
+			return result
+		}
+		writeResult := func(b []byte) error {
+			var err error
+			_, writeErr := w.Write(b)
+			if writeErr != nil {
+				err = writeErr
+			}
+			_, writeErr = w.Write([]byte{'\n'})
+			if writeErr != nil {
+				err = writeErr
+			}
+			return err
+		}
+
 		for i := range entries {
 			if entries[i].Name()[0] == '.' {
 				continue
@@ -41,8 +77,14 @@ func enumerateFiles(w io.Writer) error {
 						}
 						return false
 					}()
+
 					if hasZ {
-						_, err := w.Write([]byte(fmt.Sprintf("%s\t%s\t%s\n", id, dir, "Z")))
+						err := writeResult([]byte(
+							strings.Join(
+								addEnabled(id, dir, "Z", path.Join(k.Path, dir)),
+								partsSep,
+							),
+						))
 						if err != nil {
 							log.Warn().Err(err).Msg("error writing result")
 						}
@@ -51,13 +93,23 @@ func enumerateFiles(w io.Writer) error {
 							return fmt.Errorf("unable to get z-data from dir (%s)", err.Error())
 						}
 						for _, source := range z.Sources {
-							_, err := w.Write([]byte(fmt.Sprintf("%s\t%s\t%s\n", id, path.Join(dir, source), "S")))
+							err := writeResult([]byte(
+								strings.Join(
+									addEnabled(id, path.Join(dir, source), "S", path.Join(k.Path, dir, source)),
+									partsSep,
+								),
+							))
 							if err != nil {
 								log.Warn().Err(err).Msg("error writing result")
 							}
 						}
 						for _, object := range z.Objects {
-							_, err := w.Write([]byte(fmt.Sprintf("%s\t%s\t%s\n", id, path.Join(dir, object), "O")))
+							err := writeResult([]byte(
+								strings.Join(
+									addEnabled(id, path.Join(dir, object), "O", path.Join(k.Path, dir, object)),
+									partsSep,
+								),
+							))
 							if err != nil {
 								log.Warn().Err(err).Msg("error writing result")
 							}
@@ -67,7 +119,12 @@ func enumerateFiles(w io.Writer) error {
 							if e.Name()[0] == '.' {
 								continue
 							}
-							_, err := w.Write([]byte(fmt.Sprintf("%s\t%s\t%s\n", id, path.Join(dir, e.Name()), "F")))
+							err := writeResult([]byte(
+								strings.Join(
+									addEnabled(id, path.Join(dir, e.Name()), "F", path.Join(k.Path, dir, e.Name())),
+									partsSep,
+								),
+							))
 							if err != nil {
 								log.Warn().Err(err).Msg("error writing result")
 							}
@@ -75,7 +132,12 @@ func enumerateFiles(w io.Writer) error {
 					}
 				}
 			} else {
-				_, err := w.Write([]byte(fmt.Sprintf("%s\t%s\t%s\n", id, entries[i].Name(), "F")))
+				err := writeResult([]byte(
+					strings.Join(
+						addEnabled(id, entries[i].Name(), "F", path.Join(k.Path, entries[i].Name())),
+						partsSep,
+					),
+				))
 				if err != nil {
 					log.Warn().Err(err).Msg("error writing result")
 				}
@@ -83,5 +145,5 @@ func enumerateFiles(w io.Writer) error {
 		}
 	}
 
-  return nil
+	return nil
 }

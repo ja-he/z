@@ -25,7 +25,7 @@ type FindTextCommand struct{}
 func (c *FindTextCommand) Execute(args []string) error {
 	pathsArg := ""
 	sedConvertKToPathPipeline := ""
-	sedConvertPathToKPipeline := ""
+	sedConvertPathToKCommandStr := ""
 	for kID, k := range cfg.GlobalCfg.Ks {
 		pathsArg += fmt.Sprintf(` "%s"`, k.Path)
 		sedConvertKToPathPipeline += fmt.Sprintf(
@@ -33,22 +33,23 @@ func (c *FindTextCommand) Execute(args []string) error {
 			kID,
 			strings.ReplaceAll(k.Path, `/`, `\/`),
 		)
-		sedConvertPathToKPipeline += fmt.Sprintf(
+		sedConvertPathToKCommandStr += fmt.Sprintf(
 			`| sed "s/^%s\//%s /"`,
 			strings.ReplaceAll(k.Path, `/`, `\/`),
 			kID,
 		)
 	}
 
-	cmdStr :=
-		`rg --line-number --with-filename . --color=never --field-match-separator ' '` + pathsArg + " " +
-			sedConvertPathToKPipeline + " | " +
-			"fzf --ansi --preview " +
-			fmt.Sprintf(
-				`'bat --color=always --decorations=never $(echo {1..2} %s) --highlight-line {3}'`,
-				sedConvertKToPathPipeline,
-			)
-	cmd := exec.Command("bash", "-c", cmdStr)
+	rgCommandStr := `rg --line-number --with-filename . --color=never --field-match-separator ' '` + pathsArg + " "
+	sourceCommandStr := rgCommandStr + " | " + sedConvertPathToKCommandStr
+	fzfOptsStr := "--ansi --preview " +
+		fmt.Sprintf(
+			`'bat --color=always --decorations=never $(echo {1..2} %s) --highlight-line {3}'`,
+			sedConvertKToPathPipeline,
+		)
+	fzfCommandStr := "fzf " + fzfOptsStr
+
+	cmd := exec.Command("bash", "-c", sourceCommandStr+" | "+fzfCommandStr)
 
 	cmd.Stderr, cmd.Stdin = os.Stderr, os.Stdin
 	outPipe, err := cmd.StdoutPipe()
@@ -132,10 +133,15 @@ func (c *FindFileCommand) Execute(args []string) error {
 		return fmt.Errorf("could not start fzf (%s)", err.Error())
 	}
 
-  enumerationErr := enumerateFiles(resultsWriter)
-  if enumerationErr != nil {
-    return fmt.Errorf("could not enumerate files (%s)", enumerationErr)
-  }
+	enumerationErr := (&EnumerateFilesCommand{
+		K:        true,
+		FileName: true,
+		FileType: true,
+		FullPath: false,
+	}).enumerateFiles(resultsWriter)
+	if enumerationErr != nil {
+		return fmt.Errorf("could not enumerate files (%s)", enumerationErr)
+	}
 
 	selected, err := io.ReadAll(stdoutPipe)
 	if err != nil {
