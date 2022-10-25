@@ -41,7 +41,7 @@ func (c *FindTextCommand) Execute(args []string) error {
 	}
 
 	rgCommandStr := `rg --line-number --with-filename . --color=never --field-match-separator ' '` + pathsArg + " "
-	sourceCommandStr := rgCommandStr + " | " + sedConvertPathToKCommandStr
+	sourceCommandStr := rgCommandStr + sedConvertPathToKCommandStr
 	fzfOptsStr := "--ansi --preview " +
 		fmt.Sprintf(
 			`'bat --color=always --decorations=never $(echo {1..2} %s) --highlight-line {3}'`,
