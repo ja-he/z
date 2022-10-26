@@ -23,6 +23,8 @@ type FindCommand struct {
 type FindTextCommand struct{}
 
 func (c *FindTextCommand) Execute(args []string) error {
+	// TODO(ja-he): Add PDFs (to-text-converted), perhaps others, perhaps behind flag?
+
 	pathsArg := ""
 	sedConvertKToPathPipeline := ""
 	sedConvertPathToKCommandStr := ""
