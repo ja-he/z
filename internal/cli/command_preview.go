@@ -1,13 +1,16 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"z/internal/cfg"
 
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,6 +42,33 @@ func (c *PreviewCommand) Execute(args []string) error {
 
 	zType := sArgs[2]
 
+	termwidth, _, err := func() (int, int, error) {
+		wCmd := exec.Command("tput", "cols")
+		wData, err := wCmd.Output()
+		if err != nil {
+			return 0, 0, err
+		}
+		w, err := strconv.Atoi(string(bytes.TrimRight(wData, "\n")))
+		if err != nil {
+			return 0, 0, err
+		}
+
+		hCmd := exec.Command("tput", "lines")
+		hData, err := hCmd.Output()
+		if err != nil {
+			return 0, 0, err
+		}
+		h, err := strconv.Atoi(string(bytes.TrimRight(hData, "\n")))
+		if err != nil {
+			return 0, 0, err
+		}
+
+		return w, h, nil
+	}()
+	if err != nil {
+		log.Warn().Err(err).Msg("don't have termwidth,-height data")
+	}
+
 	switch zType {
 
 	case "Z":
@@ -62,6 +92,8 @@ func (c *PreviewCommand) Execute(args []string) error {
 		switch strings.TrimPrefix(ext, ".") {
 		case "txt", "md", "tex", "bib":
 			cmd = exec.Command("bat", "--color", "always", "--decorations", "never", fullPath)
+		case "jpeg", "jpg", "png", "tif", "gif":
+			cmd = exec.Command("catimg", "-w", fmt.Sprint(termwidth*2), fullPath)
 		case "pdf":
 			cmd = exec.Command("pdftotext", fullPath, "-")
 		}
