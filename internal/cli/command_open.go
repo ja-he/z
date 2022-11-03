@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -99,7 +100,21 @@ func (c *OpenCommand) Execute(args []string) error {
 				return openCmd, nil
 
 			default:
-				return nil, fmt.Errorf("unknown file extension '%s'", ext)
+				fmt.Printf("unknown file extension '%s', try 'nvim'? [Y/n]", ext)
+				r := bufio.NewReader(os.Stdin)
+				resp, _, err := r.ReadLine()
+				response := string(resp)
+				if err != nil {
+					return nil, fmt.Errorf("on unknown extension '%s', could not get user input (%s)", ext, err.Error())
+				}
+				switch {
+				case response == "" || response == "y" || response == "Y" || response == "yes":
+					return exec.Command("nvim", fullPath), nil
+				case response == "n" || response == "N" || response == "no":
+					return nil, fmt.Errorf("user rejected suggested editor for unkonwn extensions '%s'", ext)
+				default:
+					return nil, fmt.Errorf("unknown file extension '%s' and unknown response '%s' to prompt", ext, response)
+				}
 			}
 		}()
 		if err != nil {
