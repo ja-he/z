@@ -96,6 +96,8 @@ func (c *PreviewCommand) Execute(args []string) error {
 			cmd = exec.Command("catimg", "-w", fmt.Sprint(termwidth*2), fullPath)
 		case "pdf":
 			cmd = exec.Command("pdftotext", fullPath, "-")
+		case "html":
+			cmd = exec.Command("w3m", "-dump", fullPath, "-cols", fmt.Sprint(termwidth))
 		}
 		if cmd != nil {
 			cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
