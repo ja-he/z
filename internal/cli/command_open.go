@@ -95,6 +95,10 @@ func (c *OpenCommand) Execute(args []string) error {
 				openCmd := exec.Command("zathura", fullPath)
 				return openCmd, nil
 
+			case "html":
+				openCmd := exec.Command("firefox", fullPath)
+				return openCmd, nil
+
 			case "xopp":
 				openCmd := exec.Command("xournalpp", fullPath)
 				return openCmd, nil
