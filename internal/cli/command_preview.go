@@ -98,6 +98,13 @@ func (c *PreviewCommand) Execute(args []string) error {
 			cmd = exec.Command("pdftotext", fullPath, "-")
 		case "html":
 			cmd = exec.Command("w3m", "-dump", fullPath, "-cols", fmt.Sprint(termwidth))
+		default:
+			encodingString, err := exec.Command("file", "-b", fullPath).Output()
+			if err == nil {
+				if strings.Contains(string(encodingString), "UTF-8 text") || strings.Contains(string(encodingString), "ASCII text") {
+					cmd = exec.Command("cat", fullPath)
+				}
+			}
 		}
 		if cmd != nil {
 			cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
@@ -105,7 +112,7 @@ func (c *PreviewCommand) Execute(args []string) error {
 				return fmt.Errorf("error running preview command (%s)", err.Error())
 			}
 		} else {
-			fmt.Printf("extension '%s' not previewable\n", ext)
+			fmt.Printf("file not previewable\n")
 		}
 
 	default:
