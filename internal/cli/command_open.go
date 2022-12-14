@@ -88,7 +88,11 @@ func (c *OpenCommand) Execute(args []string) error {
 				return nvimCmd, nil
 
 			case "png", "jpg", "jpeg", "tif":
-				openCmd := exec.Command("feh", fullPath)
+				openCmd := exec.Command(
+          "feh",
+          "--image-bg=white",
+          fullPath,
+        )
 				return openCmd, nil
 
 			case "pdf":
