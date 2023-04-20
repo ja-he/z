@@ -18,6 +18,9 @@ type CommandLineOpts struct {
 
 	S    SyncCommand `command:"s"`
 	Sync SyncCommand `command:"sync"`
+
+	M    MakeCommand `command:"m"`
+	Make MakeCommand `command:"make"`
 }
 
 var Opts CommandLineOpts
