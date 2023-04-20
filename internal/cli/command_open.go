@@ -89,10 +89,10 @@ func (c *OpenCommand) Execute(args []string) error {
 
 			case "png", "jpg", "jpeg", "tif":
 				openCmd := exec.Command(
-          "feh",
-          "--image-bg=white",
-          fullPath,
-        )
+					"feh",
+					"--image-bg=white",
+					fullPath,
+				)
 				return openCmd, nil
 
 			case "pdf":
@@ -127,6 +127,11 @@ func (c *OpenCommand) Execute(args []string) error {
 		}()
 		if err != nil {
 			return fmt.Errorf("error creating command (%s)", err.Error())
+		}
+
+		switch openCmd.Args[0] {
+		case "feh", "zathura", "xournalpp":
+		default:
 		}
 		openCmd.Stdout, openCmd.Stderr, openCmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 		if err := openCmd.Run(); err != nil {
