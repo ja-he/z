@@ -14,8 +14,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// SyncCommand is the command that syncs all Ks.
 type SyncCommand struct{}
 
+// Execute runs the sync command.
 func (c *SyncCommand) Execute(args []string) error {
 	errs := []string{}
 	msgs := []string{}

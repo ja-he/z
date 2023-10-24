@@ -1,18 +1,22 @@
+// Package cfg provides the global config, parsed by main.
 package cfg
 
-// the global config, parsed by main
+// GlobalCfg is the global config, parsed by main.
 var GlobalCfg Cfg
 
+// Cfg is the top level config.
 type Cfg struct {
 	Ks         map[string]K         `yaml:"Ks"`
 	Blueprints map[string]Blueprint `yaml:"blueprints"`
 }
 
+// A K is a single 'Kasten', a directory of Zs (files).
 type K struct {
 	Path string `yaml:"path"` // when empty, sync will be assumed to be manual
 	URL  string `yaml:"url"`
 }
 
+// A Blueprint is a template for a new Z (file).
 type Blueprint struct {
 	Subdir    string            `yaml:"subdir"`
 	Templates map[string]string `yaml:"templates"`
@@ -23,6 +27,7 @@ type Blueprint struct {
 	Objects   []string          `yaml:"objects"`
 }
 
+// TemplateFiller is the data passed to templates.
 type TemplateFiller struct {
 	K     K
 	Name  string
