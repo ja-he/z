@@ -9,7 +9,7 @@ type Cfg struct {
 }
 
 type K struct {
-	Path string `yaml:"path"`
+	Path string `yaml:"path"` // when empty, sync will be assumed to be manual
 	URL  string `yaml:"url"`
 }
 

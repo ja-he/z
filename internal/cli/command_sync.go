@@ -21,6 +21,13 @@ func (c *SyncCommand) Execute(args []string) error {
 	msgs := []string{}
 	for kID, k := range cfg.GlobalCfg.Ks {
 
+		// skip manually synced Ks
+		if k.URL == "" {
+			log.Info().Msgf("skipping K '%s' (manual sync)", kID)
+			continue
+		}
+		log.Info().Msgf("syncing K '%s' (auto sync)", kID)
+
 		if hadToInitialize := ensureInitialized(kID, k); !hadToInitialize {
 
 			fmt.Println("updating", kID)
