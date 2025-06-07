@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"syscall"
 	"z/internal/cfg"
 
 	"github.com/rs/zerolog/log"
@@ -142,11 +143,17 @@ func (c *FindFileCommand) Execute(args []string) error {
 		FullPath: false,
 	}).enumerateFiles(resultsWriter)
 	if enumerationErr != nil {
-		return fmt.Errorf("could not enumerate files (%s)", enumerationErr)
+		if fzfTermErr := fzfCmd.Process.Signal(syscall.SIGTERM); fzfTermErr != nil {
+			return fmt.Errorf("could not enumerate files (%w) and then failed to shut down FZF (%w)", enumerationErr, fzfTermErr)
+		}
+		return fmt.Errorf("could not enumerate files (%w)", enumerationErr)
 	}
 
 	selected, err := io.ReadAll(stdoutPipe)
 	if err != nil {
+		if fzfTermErr := fzfCmd.Process.Signal(syscall.SIGTERM); fzfTermErr != nil {
+			return fmt.Errorf("could not read fzf output (%w) and then failed to shut down FZF (%w)", err, fzfTermErr)
+		}
 		return fmt.Errorf("could not read fzf output (%s)", err.Error())
 	}
 
