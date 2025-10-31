@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -94,8 +95,9 @@ Configuration is read from ~/.config/z.yml which defines your Ks (knowledge base
 			os.Exit(0)
 		}
 
-		// Check for specific error types
-		if flagsErr, ok := err.(*flags.Error); ok {
+		// Check for specific error types using errors.As for better error handling
+		var flagsErr *flags.Error
+		if errors.As(err, &flagsErr) {
 			switch flagsErr.Type {
 			case flags.ErrHelp:
 				// Help was requested, exit cleanly
