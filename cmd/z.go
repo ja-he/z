@@ -19,7 +19,11 @@ import (
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	configPath := path.Join(os.Getenv("HOME"), ".config/z.yml")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not determine user home directory")
+	}
+	configPath := path.Join(homeDir, ".config/z.yml")
 	configData, readErr := os.ReadFile(configPath)
 	if readErr != nil {
 		if os.IsNotExist(readErr) {
@@ -89,7 +93,7 @@ Configuration is read from ~/.config/z.yml which defines your Ks (knowledge base
 	}
 	parser.SubcommandsOptional = false
 
-	_, err := parser.Parse()
+	_, err = parser.Parse()
 	if err != nil {
 		if flags.WroteHelp(err) {
 			os.Exit(0)
