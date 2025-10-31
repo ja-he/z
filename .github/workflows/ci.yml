@@ -10,7 +10,7 @@ jobs:
   test:
     name: Test & Build
     runs-on: ubuntu-latest
-    container: golang:1.22
+    container: golang:1.25
 
     steps:
     - name: Check out code
