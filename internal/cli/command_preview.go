@@ -19,12 +19,12 @@ type PreviewCommand struct {
 
 func (c *PreviewCommand) Execute(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("expected a single (single-quoted) arg for 'preview' but got %d", len(args))
+		return fmt.Errorf("expected a single argument for 'preview', got %d\nUsage: z preview '<K>\\t<file>\\t<type>' (tab-separated)", len(args))
 	}
 
 	sArgs := strings.Split(args[0], "\t")
 	if len(sArgs) != 3 {
-		return fmt.Errorf("expected three tab-separated args in arg string %d", len(args))
+		return fmt.Errorf("expected three tab-separated values in argument, got %d\nUsage: z preview '<K>\\t<file>\\t<type>'", len(sArgs))
 	}
 
 	kID := sArgs[0]
@@ -37,7 +37,10 @@ func (c *PreviewCommand) Execute(args []string) error {
 	fullPath := path.Join(k.Path, file)
 	_, err := os.Stat(fullPath)
 	if err != nil {
-		return fmt.Errorf("file '%s' stat error (%s)", fullPath, err.Error())
+		if os.IsNotExist(err) {
+			return fmt.Errorf("file does not exist: '%s'", fullPath)
+		}
+		return fmt.Errorf("cannot access file '%s': %s", fullPath, err.Error())
 	}
 
 	zType := sArgs[2]

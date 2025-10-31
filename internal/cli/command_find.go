@@ -15,10 +15,10 @@ import (
 )
 
 type FindCommand struct {
-	T    FindTextCommand `command:"t"`
-	Text FindTextCommand `command:"text"`
-	F    FindFileCommand `command:"f"`
-	File FindFileCommand `command:"file"`
+	T    FindTextCommand `command:"t" description:"Search for text content within files (short for 'text')"`
+	Text FindTextCommand `command:"text" description:"Search for text content within files using ripgrep and fzf"`
+	F    FindFileCommand `command:"f" description:"Find files by name (short for 'file')"`
+	File FindFileCommand `command:"file" description:"Find files by name using fzf with preview"`
 }
 
 type FindTextCommand struct{}

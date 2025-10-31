@@ -17,7 +17,7 @@ type OpenCommand struct{}
 
 func (c *OpenCommand) Execute(args []string) error {
 	if len(args) != 3 {
-		return fmt.Errorf("expected 3 args for command 'open' but got %d", len(args))
+		return fmt.Errorf("expected 3 arguments for 'open', got %d\nUsage: z open <K> <file> <type>\n  K:    knowledge base ID\n  file: path to file relative to K\n  type: one of Z (Z-note), D (directory), F (file), S (source), O (object)", len(args))
 	}
 
 	kID := args[0]
@@ -30,7 +30,10 @@ func (c *OpenCommand) Execute(args []string) error {
 	fullPath := path.Join(k.Path, file)
 	_, err := os.Stat(fullPath)
 	if err != nil {
-		return fmt.Errorf("file '%s' stat error (%s)", fullPath, err.Error())
+		if os.IsNotExist(err) {
+			return fmt.Errorf("file does not exist: '%s'", fullPath)
+		}
+		return fmt.Errorf("cannot access file '%s': %s", fullPath, err.Error())
 	}
 
 	zType := args[2]

@@ -20,16 +20,20 @@ import (
 type CreateCommand struct{}
 
 func (_ *CreateCommand) Execute(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("too few arguments")
+	if len(args) < 2 {
+		return fmt.Errorf("too few arguments: expected 'z create <K> <name> [blueprint]'\n  K:         ID of the knowledge base (K) to create in\n  name:      name for the new note/file\n  blueprint: (optional) blueprint to use for the note")
 	} else if len(args) > 3 {
-		return fmt.Errorf("too many arguments")
+		return fmt.Errorf("too many arguments: expected 'z create <K> <name> [blueprint]', got %d arguments", len(args))
 	}
 
 	kID := args[0]
 	k, kOK := cfg.GlobalCfg.Ks[kID]
 	if !kOK {
-		return fmt.Errorf("no such K '%s'", kID)
+		available := make([]string, 0, len(cfg.GlobalCfg.Ks))
+		for id := range cfg.GlobalCfg.Ks {
+			available = append(available, id)
+		}
+		return fmt.Errorf("no such K '%s'\nAvailable Ks: %s", kID, strings.Join(available, ", "))
 	}
 	name := args[1]
 	blueprintID := ""
@@ -42,10 +46,17 @@ func (_ *CreateCommand) Execute(args []string) error {
 		var ok bool
 		blueprint, ok = cfg.GlobalCfg.Blueprints[blueprintID]
 		if !ok {
-			return fmt.Errorf("no such blueprint '%s'", blueprintID)
+			available := make([]string, 0, len(cfg.GlobalCfg.Blueprints))
+			for id := range cfg.GlobalCfg.Blueprints {
+				available = append(available, id)
+			}
+			if len(available) > 0 {
+				return fmt.Errorf("no such blueprint '%s'\nAvailable blueprints: %s", blueprintID, strings.Join(available, ", "))
+			}
+			return fmt.Errorf("no such blueprint '%s' (no blueprints configured)", blueprintID)
 		}
 		if blueprint.Open == "" {
-			return fmt.Errorf("apparently the open command is missing from this blueprint")
+			return fmt.Errorf("blueprint '%s' is invalid: missing required 'open' command", blueprintID)
 		}
 	}
 
