@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    container: golang:1.24
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Check formatting
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "The following files are not formatted correctly:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Run go vet
+      run: go vet ./...
+
+    - name: Run tests
+      run: go test -v -race ./...
+
+    - name: Build
+      run: go build -v ./cmd/z.go
+
+    - name: Build for Linux architectures
+      run: |
+        GOOS=linux GOARCH=amd64 go build -o z-linux-amd64 ./cmd/z.go
+        GOOS=linux GOARCH=arm64 go build -o z-linux-arm64 ./cmd/z.go
