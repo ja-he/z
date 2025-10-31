@@ -77,7 +77,7 @@ func (c *PreviewCommand) Execute(args []string) error {
 			return err
 		}
 		printable, _ := yaml.Marshal(z)
-		fmt.Printf(string(printable))
+		fmt.Print(string(printable))
 
 	case "D":
 		cmd := exec.Command("ls", "-a1", fullPath)
