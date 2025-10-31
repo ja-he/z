@@ -1,6 +1,6 @@
 module z
 
-go 1.25
+go 1.24
 
 require (
 	github.com/jessevdk/go-flags v1.5.0
