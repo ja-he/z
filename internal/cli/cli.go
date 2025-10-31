@@ -3,7 +3,7 @@ package cli
 type CommandLineOpts struct {
 	Version VersionCommand `command:"version" description:"Display version information"`
 
-	Init InitCommand `command:"init" description:"Initialize all Ks by cloning their git repositories"`
+	Init InitCommand `command:"init" description:"Initialize z: create config if missing, set up all Ks (clone remote, init local)"`
 
 	C      CreateCommand `command:"c" description:"Create a new note or file (short for 'create')"`
 	Create CreateCommand `command:"create" description:"Create a new note or file from a blueprint in a K"`
