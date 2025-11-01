@@ -136,8 +136,8 @@ func createBoilerplateConfig(configPath string) error {
 	colorEnabled := true
 	config := cfg.Cfg{
 		Settings: cfg.Settings{
-			Color: &colorEnabled, // Enable colored output by default
-			Level: "info",        // Default log level
+			Color:          &colorEnabled, // Enable colored output by default
+			VerbosityLevel: "info",        // Default log level
 		},
 		Ks: map[string]cfg.K{
 			"misc": {
@@ -171,7 +171,7 @@ func createBoilerplateConfig(configPath string) error {
 #
 # Settings are application-wide settings:
 #   color: Enable colored output in logs (default: true, set to false to disable)
-#   level: Log verbosity level - trace, debug, info, warn, error, fatal, panic (default: info)
+#   verbosity-level: Log verbosity level - trace, debug, info, warn, error, fatal, panic (default: info)
 #
 # Ks are knowledge bases - directories containing your notes
 # Each K can be:

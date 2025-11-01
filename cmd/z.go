@@ -72,8 +72,8 @@ func main() {
 
 			// Set log level (default: info)
 			logLevel := zerolog.InfoLevel
-			if cfg.GlobalCfg.Settings.Level != "" {
-				logLevel = parseLogLevel(cfg.GlobalCfg.Settings.Level)
+			if cfg.GlobalCfg.Settings.VerbosityLevel != "" {
+				logLevel = parseLogLevel(cfg.GlobalCfg.Settings.VerbosityLevel)
 			}
 			zerolog.SetGlobalLevel(logLevel)
 
