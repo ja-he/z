@@ -119,7 +119,7 @@ func (c *PreviewCommand) Execute(args []string) error {
 		}
 
 	default:
-		return fmt.Errorf("Unknown Z-Type '%s'", zType)
+		return fmt.Errorf("unknown Z-Type '%s'", zType)
 
 	}
 

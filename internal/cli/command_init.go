@@ -15,7 +15,7 @@ import (
 
 type InitCommand struct{}
 
-func (_ *InitCommand) Execute(_ []string) error {
+func (*InitCommand) Execute(_ []string) error {
 	// Check if config file exists, create boilerplate if not
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

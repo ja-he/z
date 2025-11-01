@@ -19,7 +19,7 @@ import (
 
 type CreateCommand struct{}
 
-func (_ *CreateCommand) Execute(args []string) error {
+func (*CreateCommand) Execute(args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("too few arguments: expected 'z create <K> <name> [blueprint]'\n  K:         ID of the knowledge base (K) to create in\n  name:      name for the new note/file\n  blueprint: (optional) blueprint to use for the note")
 	} else if len(args) > 3 {
@@ -163,8 +163,8 @@ func (_ *CreateCommand) Execute(args []string) error {
 	for file := range filesWithContent {
 		if path.IsAbs(file) {
 			return fmt.Errorf(
-				"This resolved path (%s) appears absolute."+
-					"Use paths relative to subdir instead (or to K, if desired and only single file).",
+				"this resolved path (%s) appears absolute."+
+					"Use paths relative to subdir instead (or to K, if desired and only single file)",
 				file,
 			)
 		}
