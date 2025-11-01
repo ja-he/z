@@ -123,10 +123,10 @@ func (c *OpenCommand) Execute(args []string) error {
 				if err != nil {
 					return nil, fmt.Errorf("on unknown extension '%s', could not get user input (%s)", ext, err.Error())
 				}
-				switch {
-				case response == "" || response == "y" || response == "Y" || response == "yes":
+				switch response {
+				case "", "y", "Y", "yes":
 					return exec.Command("nvim", fullPath), nil
-				case response == "n" || response == "N" || response == "no":
+				case "n", "N", "no":
 					return nil, fmt.Errorf("user rejected suggested editor for unkonwn extensions '%s'", ext)
 				default:
 					return nil, fmt.Errorf("unknown file extension '%s' and unknown response '%s' to prompt", ext, response)
@@ -161,7 +161,7 @@ func (c *OpenCommand) Execute(args []string) error {
 		}
 
 	default:
-		return fmt.Errorf("Unknown Z-Type '%s'", zType)
+		return fmt.Errorf("unknown Z-Type '%s'", zType)
 	}
 
 	return nil

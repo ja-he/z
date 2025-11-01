@@ -9,7 +9,7 @@ import (
 
 type VersionCommand struct{}
 
-func (_ *VersionCommand) Execute(_ []string) error {
+func (*VersionCommand) Execute(_ []string) error {
 	rng := rand.New(rand.NewSource(time.Now().UnixMilli()))
 	randomAnimal := func() uint32 {
 		lb, ub := uint32(0x1f400), uint32(0x1f43c)
