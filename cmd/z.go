@@ -16,6 +16,28 @@ import (
 	"z/internal/cli"
 )
 
+// parseLogLevel converts a log level string to a zerolog.Level
+func parseLogLevel(levelStr string) zerolog.Level {
+	switch strings.ToLower(levelStr) {
+	case "trace":
+		return zerolog.TraceLevel
+	case "debug":
+		return zerolog.DebugLevel
+	case "info":
+		return zerolog.InfoLevel
+	case "warn", "warning":
+		return zerolog.WarnLevel
+	case "error":
+		return zerolog.ErrorLevel
+	case "fatal":
+		return zerolog.FatalLevel
+	case "panic":
+		return zerolog.PanicLevel
+	default:
+		return zerolog.InfoLevel // default to info
+	}
+}
+
 func main() {
 	// Initialize logger with colored output by default
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
@@ -46,7 +68,16 @@ func main() {
 				}
 			}
 
-			// Reconfigure logger based on color setting
+			// Reconfigure logger based on settings
+
+			// Set log level (default: info)
+			logLevel := zerolog.InfoLevel
+			if cfg.GlobalCfg.Settings.Level != "" {
+				logLevel = parseLogLevel(cfg.GlobalCfg.Settings.Level)
+			}
+			zerolog.SetGlobalLevel(logLevel)
+
+			// Set color output
 			// If color is not explicitly set (nil), default to true (colored output)
 			// To disable colors, users must explicitly set color: false
 			colorEnabled := true // default

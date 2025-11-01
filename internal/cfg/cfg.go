@@ -13,7 +13,8 @@ type Cfg struct {
 
 // Settings contains application-wide settings.
 type Settings struct {
-	Color *bool `yaml:"color"` // Enable colored output in logs (default: true if nil)
+	Color *bool  `yaml:"color"` // Enable colored output in logs (default: true if nil)
+	Level string `yaml:"level"` // Log level: trace, debug, info, warn, error, fatal, panic (default: info)
 }
 
 // A K is a single 'Kasten', a directory of Zs (files).
