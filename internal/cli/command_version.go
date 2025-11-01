@@ -10,10 +10,10 @@ import (
 type VersionCommand struct{}
 
 func (_ *VersionCommand) Execute(_ []string) error {
-	rand.Seed(time.Now().UnixMilli())
+	rng := rand.New(rand.NewSource(time.Now().UnixMilli()))
 	randomAnimal := func() uint32 {
 		lb, ub := uint32(0x1f400), uint32(0x1f43c)
-		return (rand.Uint32() % (ub - lb)) + lb
+		return (rng.Uint32() % (ub - lb)) + lb
 	}
 	fmt.Printf(
 		"v(%c).(%c).(%c)\n",

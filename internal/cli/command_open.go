@@ -52,11 +52,16 @@ func (c *OpenCommand) Execute(args []string) error {
 		if z.View != "" {
 			log.Info().Str("command", z.View).Msg("running view command")
 			viewCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", fullPath, z.View))
-			viewCmd.Start()
-			defer func() {
-				log.Info().Msg("terminating view command on exit")
-				viewCmd.Process.Kill()
-			}()
+			if err := viewCmd.Start(); err != nil {
+				log.Warn().Err(err).Msg("failed to start view command")
+			} else {
+				defer func() {
+					log.Info().Msg("terminating view command on exit")
+					if err := viewCmd.Process.Kill(); err != nil {
+						log.Warn().Err(err).Msg("failed to kill view command process")
+					}
+				}()
+			}
 		}
 		// NOTE(ja-he):
 		//  Neovim, a common open command for me, does some weird stuff on cleanup
