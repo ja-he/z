@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+	// Initialize logger with colored output by default
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	homeDir, err := os.UserHomeDir()
@@ -44,6 +45,19 @@ func main() {
 					URL:  os.ExpandEnv(k.URL),
 				}
 			}
+
+			// Reconfigure logger based on color setting
+			// If color is not explicitly set (nil), default to true (colored output)
+			// To disable colors, users must explicitly set color: false
+			colorEnabled := true // default
+			if cfg.GlobalCfg.Settings.Color != nil {
+				colorEnabled = *cfg.GlobalCfg.Settings.Color
+			}
+			if !colorEnabled {
+				// Disable colored output
+				log.Logger = log.Output(os.Stderr)
+			}
+
 			log.Debug().Int("ks", len(cfg.GlobalCfg.Ks)).Int("blueprints", len(cfg.GlobalCfg.Blueprints)).Msg("loaded config")
 		}
 	}

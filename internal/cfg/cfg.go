@@ -6,8 +6,14 @@ var GlobalCfg Cfg
 
 // Cfg is the top level config.
 type Cfg struct {
+	Settings   Settings             `yaml:"settings"`
 	Ks         map[string]K         `yaml:"Ks"`
 	Blueprints map[string]Blueprint `yaml:"blueprints"`
+}
+
+// Settings contains application-wide settings.
+type Settings struct {
+	Color *bool `yaml:"color"` // Enable colored output in logs (default: true if nil)
 }
 
 // A K is a single 'Kasten', a directory of Zs (files).

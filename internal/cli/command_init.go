@@ -133,7 +133,11 @@ func createBoilerplateConfig(configPath string) error {
 	}
 	miscPath := path.Join(homeDir, "notes", "misc")
 
+	colorEnabled := true
 	config := cfg.Cfg{
+		Settings: cfg.Settings{
+			Color: &colorEnabled, // Enable colored output by default
+		},
 		Ks: map[string]cfg.K{
 			"misc": {
 				Path: miscPath,
@@ -163,6 +167,9 @@ func createBoilerplateConfig(configPath string) error {
 
 	// Add a helpful comment at the top
 	commentedYAML := `# z configuration file
+#
+# Settings are application-wide settings:
+#   color: Enable colored output in logs (default: true, set to false to disable)
 #
 # Ks are knowledge bases - directories containing your notes
 # Each K can be:
