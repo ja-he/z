@@ -16,7 +16,30 @@ import (
 	"z/internal/cli"
 )
 
+// parseLogLevel converts a log level string to a zerolog.Level
+func parseLogLevel(levelStr string) zerolog.Level {
+	switch strings.ToLower(levelStr) {
+	case "trace":
+		return zerolog.TraceLevel
+	case "debug":
+		return zerolog.DebugLevel
+	case "info":
+		return zerolog.InfoLevel
+	case "warn", "warning":
+		return zerolog.WarnLevel
+	case "error":
+		return zerolog.ErrorLevel
+	case "fatal":
+		return zerolog.FatalLevel
+	case "panic":
+		return zerolog.PanicLevel
+	default:
+		return zerolog.InfoLevel // default to info
+	}
+}
+
 func main() {
+	// Initialize logger with colored output by default
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	homeDir, err := os.UserHomeDir()
@@ -44,6 +67,28 @@ func main() {
 					URL:  os.ExpandEnv(k.URL),
 				}
 			}
+
+			// Reconfigure logger based on settings
+
+			// Set log level (default: info)
+			logLevel := zerolog.InfoLevel
+			if cfg.GlobalCfg.Settings.VerbosityLevel != "" {
+				logLevel = parseLogLevel(cfg.GlobalCfg.Settings.VerbosityLevel)
+			}
+			zerolog.SetGlobalLevel(logLevel)
+
+			// Set color output
+			// If color is not explicitly set (nil), default to true (colored output)
+			// To disable colors, users must explicitly set color: false
+			colorEnabled := true // default
+			if cfg.GlobalCfg.Settings.Color != nil {
+				colorEnabled = *cfg.GlobalCfg.Settings.Color
+			}
+			if !colorEnabled {
+				// Disable colored output
+				log.Logger = log.Output(os.Stderr)
+			}
+
 			log.Debug().Int("ks", len(cfg.GlobalCfg.Ks)).Int("blueprints", len(cfg.GlobalCfg.Blueprints)).Msg("loaded config")
 		}
 	}
