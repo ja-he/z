@@ -17,7 +17,11 @@ type InitCommand struct{}
 
 func (_ *InitCommand) Execute(_ []string) error {
 	// Check if config file exists, create boilerplate if not
-	configPath := path.Join(os.Getenv("HOME"), ".config/z.yml")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("could not determine user home directory: %w", err)
+	}
+	configPath := path.Join(homeDir, ".config/z.yml")
 	if _, err := os.Stat(configPath); errors.Is(err, fs.ErrNotExist) {
 		log.Info().Str("path", configPath).Msg("config file not found, creating boilerplate config")
 
@@ -123,7 +127,11 @@ func createBoilerplateConfig(configPath string) error {
 	}
 
 	// Create boilerplate config with a local 'misc' K
-	miscPath := path.Join(os.Getenv("HOME"), "notes", "misc")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("could not determine user home directory: %w", err)
+	}
+	miscPath := path.Join(homeDir, "notes", "misc")
 
 	config := cfg.Cfg{
 		Ks: map[string]cfg.K{
