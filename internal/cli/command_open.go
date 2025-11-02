@@ -52,11 +52,16 @@ func (c *OpenCommand) Execute(args []string) error {
 		if z.View != "" {
 			log.Info().Str("command", z.View).Msg("running view command")
 			viewCmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' ; %s", fullPath, z.View))
-			viewCmd.Start()
-			defer func() {
-				log.Info().Msg("terminating view command on exit")
-				viewCmd.Process.Kill()
-			}()
+			if err := viewCmd.Start(); err != nil {
+				log.Warn().Err(err).Msg("failed to start view command")
+			} else {
+				defer func() {
+					log.Info().Msg("terminating view command on exit")
+					if err := viewCmd.Process.Kill(); err != nil {
+						log.Warn().Err(err).Msg("failed to kill view command process")
+					}
+				}()
+			}
 		}
 		// NOTE(ja-he):
 		//  Neovim, a common open command for me, does some weird stuff on cleanup
@@ -118,11 +123,11 @@ func (c *OpenCommand) Execute(args []string) error {
 				if err != nil {
 					return nil, fmt.Errorf("on unknown extension '%s', could not get user input (%s)", ext, err.Error())
 				}
-				switch {
-				case response == "" || response == "y" || response == "Y" || response == "yes":
+				switch response {
+				case "", "y", "Y", "yes":
 					return exec.Command("nvim", fullPath), nil
-				case response == "n" || response == "N" || response == "no":
-					return nil, fmt.Errorf("user rejected suggested editor for unkonwn extensions '%s'", ext)
+				case "n", "N", "no":
+					return nil, fmt.Errorf("user rejected suggested editor for unknown extensions '%s'", ext)
 				default:
 					return nil, fmt.Errorf("unknown file extension '%s' and unknown response '%s' to prompt", ext, response)
 				}
@@ -156,7 +161,7 @@ func (c *OpenCommand) Execute(args []string) error {
 		}
 
 	default:
-		return fmt.Errorf("Unknown Z-Type '%s'", zType)
+		return fmt.Errorf("unknown Z-Type '%s'", zType)
 	}
 
 	return nil
