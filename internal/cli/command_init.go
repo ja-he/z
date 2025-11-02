@@ -190,7 +190,7 @@ func (c *InitCommand) Execute(_ []string) error {
 							if err != nil {
 								log.Warn().Str("K", id).Err(err).Msg("could not check for unpushed commits")
 							} else if hasUnpushed {
-								log.Warn().Str("K", id).Msg("WARNING: repository has unpushed commits, but updating remote URL anyway")
+								log.Warn().Str("K", id).Msg("repository has unpushed commits, but updating remote URL anyway")
 							}
 
 							// Update the remote URL
