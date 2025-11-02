@@ -127,7 +127,7 @@ func (c *OpenCommand) Execute(args []string) error {
 				case "", "y", "Y", "yes":
 					return exec.Command("nvim", fullPath), nil
 				case "n", "N", "no":
-					return nil, fmt.Errorf("user rejected suggested editor for unkonwn extensions '%s'", ext)
+					return nil, fmt.Errorf("user rejected suggested editor for unknown extensions '%s'", ext)
 				default:
 					return nil, fmt.Errorf("unknown file extension '%s' and unknown response '%s' to prompt", ext, response)
 				}
