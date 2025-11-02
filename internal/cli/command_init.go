@@ -1,21 +1,118 @@
 package cli
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
+	"strings"
 	"z/internal/cfg"
 
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
-type InitCommand struct{}
+type InitCommand struct {
+	Reinitialize bool `long:"reinitialize" description:"Check and update remote URLs for existing repositories"`
+}
 
-func (*InitCommand) Execute(_ []string) error {
+// normalizeGitURL removes credentials and normalizes a git URL for comparison
+func normalizeGitURL(rawURL string) (string, error) {
+	// Handle SSH URLs (git@github.com:user/repo.git)
+	sshPattern := regexp.MustCompile(`^([^@]+)@([^:]+):(.+)$`)
+	if sshPattern.MatchString(rawURL) {
+		return rawURL, nil // SSH URLs don't contain credentials in the URL itself
+	}
+
+	// Handle HTTPS URLs that might contain credentials
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		// If it fails to parse, it might be a git protocol URL like git://
+		return rawURL, nil
+	}
+
+	// Remove credentials from HTTPS URLs
+	if parsedURL.Scheme == "https" || parsedURL.Scheme == "http" {
+		parsedURL.User = nil
+		return parsedURL.String(), nil
+	}
+
+	return rawURL, nil
+}
+
+// urlsMatch compares two git URLs, ignoring credentials
+func urlsMatch(url1, url2 string) bool {
+	normalized1, err1 := normalizeGitURL(url1)
+	normalized2, err2 := normalizeGitURL(url2)
+
+	if err1 != nil || err2 != nil {
+		// If we can't normalize, fall back to direct comparison
+		return url1 == url2
+	}
+
+	return normalized1 == normalized2
+}
+
+// hasUnpushedCommits checks if a repository has commits that haven't been pushed
+func hasUnpushedCommits(repoPath string) (bool, error) {
+	// Check if there's an upstream branch
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+	cmd.Dir = repoPath
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = nil // Suppress error output
+
+	if err := cmd.Run(); err != nil {
+		// No upstream branch configured, so nothing to push
+		return false, nil
+	}
+
+	// Check if local is ahead of remote
+	cmd = exec.Command("git", "rev-list", "--count", "@{u}..HEAD")
+	cmd.Dir = repoPath
+	out.Reset()
+	cmd.Stdout = &out
+	cmd.Stderr = nil
+
+	if err := cmd.Run(); err != nil {
+		return false, err
+	}
+
+	count := strings.TrimSpace(out.String())
+	return count != "0" && count != "", nil
+}
+
+// getCurrentRemoteURL gets the current remote URL for the 'origin' remote
+func getCurrentRemoteURL(repoPath string) (string, error) {
+	cmd := exec.Command("git", "remote", "get-url", "origin")
+	cmd.Dir = repoPath
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = nil
+
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(out.String()), nil
+}
+
+// updateRemoteURL updates the remote URL for the 'origin' remote
+func updateRemoteURL(repoPath, newURL string) error {
+	cmd := exec.Command("git", "remote", "set-url", "origin", newURL)
+	cmd.Dir = repoPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func (c *InitCommand) Execute(_ []string) error {
 	// Check if config file exists, create boilerplate if not
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -65,9 +162,53 @@ func (*InitCommand) Execute(_ []string) error {
 
 	for id, k := range config.Ks {
 		if k.URL != "" {
-			// Remote K - clone from URL
+			// Remote K - clone from URL or check/update remote
 			if _, err := os.Stat(k.Path); err == nil {
-				log.Info().Str("K", id).Str("path", k.Path).Msg("K already exists, skipping clone")
+				// K already exists
+				if c.Reinitialize {
+					// Check if it's a git repo
+					gitDir := path.Join(k.Path, ".git")
+					if _, err := os.Stat(gitDir); err == nil {
+						// It's a git repo, check and update remote URL if needed
+						log.Info().Str("K", id).Msg("checking remote URL")
+
+						currentURL, err := getCurrentRemoteURL(k.Path)
+						if err != nil {
+							log.Warn().Str("K", id).Err(err).Msg("could not get current remote URL, skipping")
+							continue
+						}
+
+						if !urlsMatch(currentURL, k.URL) {
+							log.Warn().
+								Str("K", id).
+								Str("current", currentURL).
+								Str("configured", k.URL).
+								Msg("remote URL mismatch detected")
+
+							// Check for unpushed commits
+							hasUnpushed, err := hasUnpushedCommits(k.Path)
+							if err != nil {
+								log.Warn().Str("K", id).Err(err).Msg("could not check for unpushed commits")
+							} else if hasUnpushed {
+								log.Warn().Str("K", id).Msg("WARNING: repository has unpushed commits, but updating remote URL anyway")
+							}
+
+							// Update the remote URL
+							log.Info().Str("K", id).Str("new-url", k.URL).Msg("updating remote URL")
+							if err := updateRemoteURL(k.Path, k.URL); err != nil {
+								log.Error().Str("K", id).Err(err).Msg("failed to update remote URL")
+							} else {
+								log.Info().Str("K", id).Msg("remote URL updated successfully")
+							}
+						} else {
+							log.Info().Str("K", id).Msg("remote URL matches, no update needed")
+						}
+					} else {
+						log.Warn().Str("K", id).Msg("directory exists but is not a git repository")
+					}
+				} else {
+					log.Info().Str("K", id).Str("path", k.Path).Msg("K already exists, skipping clone")
+				}
 				continue
 			}
 
