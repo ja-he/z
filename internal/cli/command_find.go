@@ -23,7 +23,8 @@ type FindCommand struct {
 
 type FindTextCommand struct{}
 
-func (c *FindTextCommand) Execute(args []string) error {
+func (c *FindTextCommand) Execute(_ []string) error {
+
 	// TODO(ja-he): Add PDFs (to-text-converted), perhaps others, perhaps behind flag?
 
 	pathsArg := ""
@@ -110,7 +111,11 @@ func (c *FindTextCommand) Execute(args []string) error {
 			return "F"
 		}()
 
-		return (&OpenCommand{}).Execute([]string{kID, file, zt})
+		openCmd := &OpenCommand{}
+		openCmd.Args.K = kID
+		openCmd.Args.File = file
+		openCmd.Args.Type = zt
+		return openCmd.Execute(nil)
 
 	default:
 		log.Warn().Msg("unable to open multiple files right now")
@@ -120,7 +125,7 @@ func (c *FindTextCommand) Execute(args []string) error {
 
 type FindFileCommand struct{}
 
-func (c *FindFileCommand) Execute(args []string) error {
+func (c *FindFileCommand) Execute(_ []string) error {
 
 	fzfCmd := exec.Command("fzf", "--preview", "z preview {}")
 	fzfCmd.Stderr = os.Stderr
@@ -132,10 +137,6 @@ func (c *FindFileCommand) Execute(args []string) error {
 	if err != nil {
 		return fmt.Errorf("could not open stdout pipe for fzf (%s)", err.Error())
 	}
-	if err := fzfCmd.Start(); err != nil {
-		return fmt.Errorf("could not start fzf (%s)", err.Error())
-	}
-
 	enumerationErr := (&EnumerateFilesCommand{
 		K:        true,
 		FileName: true,
@@ -143,10 +144,11 @@ func (c *FindFileCommand) Execute(args []string) error {
 		FullPath: false,
 	}).enumerateFiles(resultsWriter)
 	if enumerationErr != nil {
-		if fzfTermErr := fzfCmd.Process.Signal(syscall.SIGTERM); fzfTermErr != nil {
-			return fmt.Errorf("could not enumerate files (%w) and then failed to shut down FZF (%w)", enumerationErr, fzfTermErr)
-		}
 		return fmt.Errorf("could not enumerate files (%w)", enumerationErr)
+	}
+
+	if err := fzfCmd.Start(); err != nil {
+		return fmt.Errorf("could not start fzf (%s)", err.Error())
 	}
 
 	selected, err := io.ReadAll(stdoutPipe)
@@ -172,7 +174,11 @@ func (c *FindFileCommand) Execute(args []string) error {
 	case 1:
 		line := string(selectedLinewise[0])
 		args := strings.Split(line, "\t")
-		return (&OpenCommand{}).Execute(args)
+		openCmd := &OpenCommand{}
+		openCmd.Args.K = args[0]
+		openCmd.Args.File = args[1]
+		openCmd.Args.Type = args[2]
+		return openCmd.Execute(nil)
 
 	default:
 		log.Warn().Msg("unable to open multiple files right now")

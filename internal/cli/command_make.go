@@ -15,7 +15,7 @@ type MakeCommand struct {
 	Path string `short:"C" long:"directory" description:"the directory to run in" default:"."`
 }
 
-func (c *MakeCommand) Execute(args []string) error {
+func (c *MakeCommand) Execute(_ []string) error {
 	zPath := path.Join(c.Path, ".z", "z.yml")
 	zYAML, err := os.ReadFile(zPath)
 	if err != nil {

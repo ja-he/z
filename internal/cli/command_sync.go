@@ -18,7 +18,7 @@ import (
 type SyncCommand struct{}
 
 // Execute runs the sync command.
-func (c *SyncCommand) Execute(args []string) error {
+func (c *SyncCommand) Execute(_ []string) error {
 	errs := []string{}
 	msgs := []string{}
 	for kID, k := range cfg.GlobalCfg.Ks {

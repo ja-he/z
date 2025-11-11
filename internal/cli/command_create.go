@@ -17,16 +17,16 @@ import (
 	"z/internal/cfg"
 )
 
-type CreateCommand struct{}
+type CreateCommand struct {
+	Args struct {
+		K         string `positional-arg-name:"K" required:"yes" description:"ID of the knowledge base (K) to create in"`
+		Name      string `positional-arg-name:"name" required:"yes" description:"Name for the new note/file"`
+		Blueprint string `positional-arg-name:"blueprint" description:"Blueprint to use for the note"`
+	} `positional-args:"yes"`
+}
 
-func (*CreateCommand) Execute(args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("too few arguments: expected 'z create <K> <name> [blueprint]'\n  K:         ID of the knowledge base (K) to create in\n  name:      name for the new note/file\n  blueprint: (optional) blueprint to use for the note")
-	} else if len(args) > 3 {
-		return fmt.Errorf("too many arguments: expected 'z create <K> <name> [blueprint]', got %d arguments", len(args))
-	}
-
-	kID := args[0]
+func (c *CreateCommand) Execute(_ []string) error {
+	kID := c.Args.K
 	k, kOK := cfg.GlobalCfg.Ks[kID]
 	if !kOK {
 		available := make([]string, 0, len(cfg.GlobalCfg.Ks))
@@ -35,11 +35,8 @@ func (*CreateCommand) Execute(args []string) error {
 		}
 		return fmt.Errorf("no such K '%s'\nAvailable Ks: %s", kID, strings.Join(available, ", "))
 	}
-	name := args[1]
-	blueprintID := ""
-	if len(args) == 3 {
-		blueprintID = args[2]
-	}
+	name := c.Args.Name
+	blueprintID := c.Args.Blueprint
 
 	var blueprint cfg.Blueprint
 	if blueprintID != "" {
@@ -256,21 +253,21 @@ func (*CreateCommand) Execute(args []string) error {
 	}
 
 	// run the open command
-	return (&OpenCommand{}).Execute([]string{
-		kID,
-		func() string {
-			if hasSubdir {
-				return subdir
-			} else {
-				return onlyFileIfNoSubdir()
-			}
-		}(),
-		func() string {
-			if hasSubdir {
-				return "Z"
-			} else {
-				return "F"
-			}
-		}(),
-	})
+	openCmd := &OpenCommand{}
+	openCmd.Args.K = kID
+	openCmd.Args.File = func() string {
+		if hasSubdir {
+			return subdir
+		} else {
+			return onlyFileIfNoSubdir()
+		}
+	}()
+	openCmd.Args.Type = func() string {
+		if hasSubdir {
+			return "Z"
+		} else {
+			return "F"
+		}
+	}()
+	return openCmd.Execute(nil)
 }

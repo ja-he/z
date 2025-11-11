@@ -18,7 +18,7 @@ type EnumerateFilesCommand struct {
 	FullPath bool `long:"full-path" description:"show full path"`
 }
 
-func (c *EnumerateFilesCommand) Execute(args []string) error {
+func (c *EnumerateFilesCommand) Execute(_ []string) error {
 	return c.enumerateFiles(os.Stdout)
 }
 

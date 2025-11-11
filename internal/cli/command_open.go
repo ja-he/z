@@ -13,20 +13,22 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type OpenCommand struct{}
+type OpenCommand struct {
+	Args struct {
+		K    string `positional-arg-name:"K" required:"yes" description:"Knowledge base ID"`
+		File string `positional-arg-name:"file" required:"yes" description:"Path to file relative to K"`
+		Type string `positional-arg-name:"type" required:"yes" description:"Type: Z (Z-note), D (directory), F (file), S (source), O (object)"`
+	} `positional-args:"yes"`
+}
 
-func (c *OpenCommand) Execute(args []string) error {
-	if len(args) != 3 {
-		return fmt.Errorf("expected 3 arguments for 'open', got %d\nUsage: z open <K> <file> <type>\n  K:    knowledge base ID\n  file: path to file relative to K\n  type: one of Z (Z-note), D (directory), F (file), S (source), O (object)", len(args))
-	}
-
-	kID := args[0]
+func (c *OpenCommand) Execute(_ []string) error {
+	kID := c.Args.K
 	k, ok := cfg.GlobalCfg.Ks[kID]
 	if !ok {
 		return fmt.Errorf("no such K '%s'", kID)
 	}
 
-	file := args[1]
+	file := c.Args.File
 	fullPath := path.Join(k.Path, file)
 	_, err := os.Stat(fullPath)
 	if err != nil {
@@ -36,7 +38,7 @@ func (c *OpenCommand) Execute(args []string) error {
 		return fmt.Errorf("cannot access file '%s': %s", fullPath, err.Error())
 	}
 
-	zType := args[2]
+	zType := c.Args.Type
 
 	switch zType {
 	case "Z":
