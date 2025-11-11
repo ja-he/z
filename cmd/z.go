@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
@@ -124,6 +126,89 @@ Configuration is read from ~/.config/z.yml which defines your Ks (knowledge base
 					for bID := range cfg.GlobalCfg.Blueprints {
 						suggestions = append(suggestions, bID)
 					}
+				}
+
+			case "open":
+				switch len(os.Args) {
+				case 3: // complete K
+					for kID := range cfg.GlobalCfg.Ks {
+						suggestions = append(suggestions, kID)
+					}
+				case 4: // complete file
+					// Get the K from the previous argument
+					kID := os.Args[2]
+					if k, ok := cfg.GlobalCfg.Ks[kID]; ok {
+						// Enumerate files in this K
+						entries, err := os.ReadDir(k.Path)
+						if err == nil {
+							for _, entry := range entries {
+								if entry.Name()[0] == '.' {
+									continue // skip hidden files
+								}
+								suggestions = append(suggestions, entry.Name())
+							}
+						}
+					}
+				case 5: // complete type
+					getTypes := func(file string, kid string) []string {
+						if k, ok := cfg.GlobalCfg.Ks[kid]; ok {
+							if path.IsAbs(file) {
+								if f, err := filepath.Rel(k.Path, file); err != nil {
+									// Given an abs path that's not relative to the K, nothing to tell here.
+									return []string{"Z", "D", "F", "S", "O"}
+								} else {
+									file = f
+								}
+							}
+							// Now we know file is relative to K path.
+
+							filePath := path.Join(k.Path, file)
+							if info, err := os.Stat(filePath); err == nil {
+								if info.IsDir() {
+									if zFileInfo, err := os.Stat(path.Join(filePath, ".z", "z.yml")); err == nil && !zFileInfo.IsDir() {
+										if yamlBytes, err := os.ReadFile(path.Join(filePath, ".z", "z.yml")); err == nil {
+											z := cfg.Z{}
+											if err := yaml.Unmarshal(yamlBytes, &z); err == nil {
+												return []string{"Z"}
+											}
+										}
+									}
+
+									return []string{"D"}
+								}
+
+								// If there is a dir element between K path and the ultimate file indicated:
+								if d := filepath.Dir(file); d != "." {
+									if info, err := os.Stat(path.Join(k.Path, d)); err != nil && info.IsDir() {
+										if zFileInfo, err := os.Stat(path.Join(k.Path, d, ".z", "z.yml")); err != nil && !zFileInfo.IsDir() {
+											if yamlBytes, err := os.ReadFile(path.Join(k.Path, d, ".z", "z.yml")); err != nil {
+												z := cfg.Z{}
+												if err := yaml.Unmarshal(yamlBytes, &z); err == nil {
+													if slices.Contains(z.Objects, filepath.Base(file)) {
+														return []string{"O"}
+													}
+													if slices.Contains(z.Sources, filepath.Base(file)) {
+														return []string{"S"}
+													}
+
+												}
+											}
+										}
+									}
+								} else {
+									return []string{"F"}
+								}
+							}
+						}
+						return []string{"Z", "D", "F", "S", "O"}
+					}
+
+					file := os.Args[3]
+					kID := os.Args[2]
+
+					types := getTypes(file, kID)
+					suggestions = append(suggestions, types...)
+
 				}
 
 			}
